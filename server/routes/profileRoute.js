@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const upload = multer(); // In-memory storage for file uploads
 const { auth } = require("../middlewares/authMiddleware");
 const { getStudentProfile, updateStudentProfile,changePassword, getTutorProfile, updateTutorProfile,changeTutorPassword,updateProfileImage} = require("../controllers/profileController");
 
@@ -21,7 +23,7 @@ router.put("/tutor", auth, updateTutorProfile);
 // Endpoint to change the tutor password
 router.put("/change-tutor-password", auth, changeTutorPassword);
 
-//Update profile picture
-router.put("/update-image", auth, updateProfileImage);
+// Update profile picture
+router.put("/update-image", auth, upload.single("image"), updateProfileImage);
 
 module.exports = router;

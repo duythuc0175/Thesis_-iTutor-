@@ -53,7 +53,7 @@ export default function Profile() {
         }
       );
       alert("Profile updated successfully!");
-      setProfileData(response.data.profile); // Update profile state with new data
+      fetchProfile(); // Fetch updated profile data
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("Failed to update profile. Please try again.");
@@ -96,36 +96,21 @@ export default function Profile() {
     const file = event.target.files[0];
     if (!file) return;
 
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", "edulink_uploads");
-    data.append("cloud_name", "dhgyagjqw");
-    data.append("folder", "profile_pictures_student");
+    const formData = new FormData();
+    formData.append("image", file);
 
     try {
-      // Upload the image to Cloudinary
-      const res = await fetch("https://api.cloudinary.com/v1_1/dhgyagjqw/image/upload", {
-        method: "POST",
-        body: data,
-      });
-
-      const uploadedImage = await res.json();
-      const uploadedImageURL = uploadedImage.url;
-      console.log(uploadedImageURL);
-
-      // Send the image URL to the backend to update the profile image
-      const backendResponse = await fetch("http://localhost:4000/api/v1/profile/update-image", {
+      const response = await fetch("http://localhost:4000/api/v1/profile/update-image", {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ image: uploadedImageURL }),
+        body: formData,
       });
 
-      const result = await backendResponse.json();
+      const result = await response.json();
 
-      if (backendResponse.ok) {
+      if (response.ok) {
         console.log("Profile image updated successfully:", result);
         window.location.reload();
       } else {

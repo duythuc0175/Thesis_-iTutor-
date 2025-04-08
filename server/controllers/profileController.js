@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const { uploadFileToS3 } = require("../config/s3Config");
 
 // Controller to get logged-in student's profile details
 const getStudentProfile = async (req, res) => {
@@ -226,27 +227,25 @@ const changeTutorPassword = async (req, res) => {
 
 const updateProfileImage = async (req, res) => {
   try {
-    // Extract user ID from the authenticated request
     const userId = req.user.id; // Assuming req.user is set after authentication
+    const file = req.file; // Assuming multer middleware is used for file upload
 
-    // Extract the new image URL from the request body
-    const { image } = req.body;
-
-    // Validate input
-    if (!image) {
-      return res.status(400).json({ message: "Image URL is required" });
+    if (!file) {
+      return res.status(400).json({ message: "Image file is required" });
     }
 
-    // Find and update the user's image
+    // Upload the file to S3
+    const imageUrl = await uploadFileToS3(file.buffer, file.originalname, "image");
+
+    // Update the user's profile image
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    user.image = image;
+    user.image = imageUrl;
     await user.save();
 
-    // Respond with the updated image
     res.status(200).json({
       message: "Profile image updated successfully",
       image: user.image,
