@@ -78,20 +78,24 @@ const EditCourse = ({ courseId, onClose, onUpdate }) => {
 
         const data = new FormData();
         data.append("file", file);
-        data.append("upload_preset", "edulink_uploads");
-        data.append("cloud_name", "dhgyagjqw");
-        data.append("folder", "course_thumbnails");
 
         try {
-            const res = await fetch("https://api.cloudinary.com/v1_1/dhgyagjqw/image/upload", {
-                method: "POST",
-                body: data,
-            });
+            const token = localStorage.getItem("token");
+            const response = await axios.post(
+                "http://localhost:4000/api/v1/courses/upload-thumbnail",
+                data,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
 
-            const uploadedImage = await res.json();
+            console.log("Uploaded Thumbnail URL:", response.data.fileUrl); // Log the URL for debugging
             setCourseData((prevData) => ({
                 ...prevData,
-                thumbnail: uploadedImage.url,
+                thumbnail: response.data.fileUrl, // Use the S3 file URL returned by the backend
             }));
         } catch (error) {
             console.error("Error uploading thumbnail:", error);
@@ -140,7 +144,7 @@ const EditCourse = ({ courseId, onClose, onUpdate }) => {
                 <form onSubmit={handleSubmit}>
                     <div>
                         <label>Course Name:</label>
-                        <input type="text" name="courseName" value={courseData.courseName} onChange={handleChange} required />
+                        <input type="text" name="courseName" value={courseData.courseName} onChange={handleChange} disabled required />
                     </div>
                     <div>
                         <label>Category:</label>

@@ -1,5 +1,5 @@
 const Section = require("../models/Section");
-const cloudinary = require("../config/cloudinaryConfig");
+const { uploadFileToS3 } = require("../config/s3Config");
 const mongoose = require("mongoose");
 const fs = require("fs"); // Import file system module
 
@@ -14,18 +14,21 @@ const isValidPdf = (filePath) => {
     }
 };
 
-// Helper function to upload files to Cloudinary
-const uploadFileToCloudinary = async (filePath) => {
+// Upload a file to S3
+exports.uploadFile = async (req, res) => {
     try {
-        const result = await cloudinary.uploader.upload(filePath, {
-            resource_type: "raw", // Ensure the file is uploaded as raw
-            folder: "pdfs", // Specify the folder in Cloudinary
-        });
-        console.log("Cloudinary Upload Result:", result); // Log the result for debugging
-        return result.secure_url; // Return the secure URL of the uploaded file
+        const file = req.file; // File uploaded via multer
+        if (!file) {
+            return res.status(400).json({ success: false, message: "No file uploaded." });
+        }
+
+        const fileType = file.mimetype === "application/pdf" ? "pdf" : "docx";
+        const fileUrl = await uploadFileToS3(file.buffer, file.originalname, fileType);
+
+        return res.status(200).json({ success: true, fileUrl });
     } catch (error) {
-        console.error("Error uploading file to Cloudinary:", error.message);
-        throw new Error("Failed to upload file to Cloudinary.");
+        console.error("Error uploading file:", error.message);
+        return res.status(500).json({ success: false, message: "Failed to upload file.", error: error.message });
     }
 };
 
@@ -39,20 +42,14 @@ exports.addSection = async (req, res) => {
             });
         }
 
-        console.log("Request Body:", req.body);
+        const { sectionName, courseIds, fileUrl } = req.body;
 
-        const { sectionName, quiz, courseIds } = req.body;
-        let pdfFile = req.body.pdfFile;
+        console.log("Received request body:", req.body); // Log the request body for debugging
 
-        // If the file is uploaded, process it with Cloudinary
-        if (req.file) {
-            pdfFile = await uploadFileToCloudinary(req.file.path);
-        }
-
-        if (!sectionName || !pdfFile) {
+        if (!fileUrl) {
             return res.status(400).json({
                 success: false,
-                message: "Section name and PDF file are required.",
+                message: "File URL is required.",
             });
         }
 
@@ -66,8 +63,7 @@ exports.addSection = async (req, res) => {
 
         const newSection = await Section.create({
             sectionName,
-            pdfFile,
-            quiz: quiz || [],
+            pdfFile: fileUrl,
             tutorId: req.user._id,
             courseIds: courseIds || [],
         });
@@ -294,12 +290,13 @@ exports.getSectionPdfById = async (req, res) => {
             });
         }
 
+        // Return the direct URL for viewing the PDF
         return res.status(200).json({
             success: true,
             message: "PDF file fetched successfully.",
             data: {
                 sectionName: section.sectionName,
-                pdfFile: section.pdfFile,
+                pdfFile: section.pdfFile, // Direct URL to the PDF file
             },
         });
     } catch (error) {

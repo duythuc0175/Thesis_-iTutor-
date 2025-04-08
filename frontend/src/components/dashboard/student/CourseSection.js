@@ -38,20 +38,19 @@ const CourseSection = () => {
       <div className="bg-white rounded-lg shadow-lg p-6">
         <h1 className="text-3xl font-bold mb-4">{section.sectionName}</h1>
 
-        {/* PDF File Display */}
+        {/* File Display */}
         <div className="mb-4">
-          <h2 className="text-xl font-semibold">PDF File:</h2>
+          <h2 className="text-xl font-semibold">File:</h2>
           {section.pdfFile ? (
-            <a
-              href={section.pdfFile}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              View PDF
-            </a>
+            <iframe
+              src={section.pdfFile}
+              title="File Viewer"
+              width="100%"
+              height="800px"
+              className="border rounded"
+            ></iframe>
           ) : (
-            <p className="text-gray-500">No PDF file available for this section.</p>
+            <p className="text-gray-500">No file available for this section.</p>
           )}
         </div>
       </div>

@@ -3,6 +3,7 @@ const Category = require("../models/Category");
 const Section = require("../models/Section");
 const RatingAndReview = require("../models/RatingAndReview");
 const User = require("../models/User");
+const { uploadFileToS3 } = require("../config/s3Config");
 
 // Add Course (Only Tutor)
 exports.addCourse = async (req, res) => {
@@ -52,7 +53,7 @@ exports.addCourse = async (req, res) => {
             status: status || "Draft",
         });
 
-        await Section.updateMany({ courseIds: { $ne: newCourse._id } }, { $addToSet: { courseIds: newCourse._id } });
+        //await Section.updateMany({ courseIds: { $ne: newCourse._id } }, { $addToSet: { courseIds: newCourse._id } });
 
         categoryObj.courses.push(newCourse._id);
         await categoryObj.save();
@@ -246,4 +247,37 @@ exports.deleteCourseById = async (req, res) => {
             error: error.message,
         });
     }
+};
+
+exports.countAllCourses = async (req, res) => {
+    try {
+        const totalCourses = await Course.countDocuments();
+        return res.status(200).json({
+            success: true,
+            message: "Total number of courses fetched successfully.",
+            data: { totalCourses },
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error occurred while counting courses.",
+            error: error.message,
+        });
+    }
+};
+
+exports.uploadThumbnail = async (req, res) => {
+  try {
+    const file = req.file; // File uploaded via multer
+    if (!file) {
+      return res.status(400).json({ success: false, message: "No file uploaded." });
+    }
+
+    const fileUrl = await uploadFileToS3(file.buffer, file.originalname, "image");
+    console.log("Uploaded file URL:", fileUrl); // Log the file URL for debugging
+    return res.status(200).json({ success: true, fileUrl });
+  } catch (error) {
+    console.error("Error uploading thumbnail:", error.message);
+    return res.status(500).json({ success: false, message: "Failed to upload thumbnail." });
+  }
 };

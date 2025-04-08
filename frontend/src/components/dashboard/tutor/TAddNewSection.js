@@ -13,56 +13,23 @@ const TAddNewSection = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Handle PDF file upload
-  const handlePdfFileUpload = async () => {
+  // Handle file upload
+  const handleFileUpload = async () => {
     if (!pdfFile) {
-      setMessage("Please select a PDF file to upload.");
+      setMessage("Please select a file to upload.");
       return;
     }
-
-    setLoading(true);
-    setMessage("");
-
+  
     const formData = new FormData();
-    formData.append("file", pdfFile);
-    formData.append("upload_preset", "edulink_uploads");
-    formData.append("cloud_name", "dhgyagjqw");
-    formData.append("folder", "pdfs");
-
+    formData.append("file", pdfFile); // Ensure the file is appended correctly
+    
+    // Log to check the file is appended correctly
+    console.log("FormData before sending:", formData);
+    console.log("File name:", pdfFile.name);
+  
     try {
       const response = await axios.post(
-        "https://api.cloudinary.com/v1_1/dhgyagjqw/raw/upload",
-        formData
-      );
-      setPdfFileUrl(response.data.secure_url); // Set the PDF file URL
-      setMessage("PDF file uploaded successfully!");
-    } catch (error) {
-      setMessage("Failed to upload PDF file. Please try again.");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-
-    if (!pdfFileUrl) {
-      setMessage("PDF file is required. Please upload the file first.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const formData = {
-        sectionName,
-        pdfFile: pdfFileUrl, // Use the uploaded PDF file URL
-      };
-
-      const response = await axios.post(
-        "http://localhost:4000/api/v1/sections/add",
+        "http://localhost:4000/api/v1/sections/upload-file", // backend endpoint
         formData,
         {
           headers: {
@@ -70,9 +37,55 @@ const TAddNewSection = () => {
           },
         }
       );
+      setPdfFileUrl(response.data.fileUrl); // Use the S3 file URL returned by the backend
+      setMessage("File uploaded successfully!");
+    } catch (error) {
+      console.error("Error uploading file:", error.response?.data || error.message);
+      setMessage("Failed to upload file. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    if (!pdfFileUrl) {
+      setMessage("File is required. Please upload the file first.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const formData = {
+        sectionName,
+        fileUrl: pdfFileUrl, // Ensure the uploaded file URL is sent
+      };
+
+      console.log("Submitting section data:", formData); // Log the request body for debugging
+
+      const response = await axios.post(
+        "http://localhost:4000/api/v1/sections/add",
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json", // Ensure JSON content type
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
       setMessage(response.data.message);
+      if (response.data.success) {
+        setSectionName(""); // Clear the form on success
+        setPdfFile(null);
+        setPdfFileUrl(""); // Reset the uploaded file URL
+      }
     } catch (error) {
+      console.error("Error posting section:", error.response?.data || error.message);
       setMessage(error.response?.data?.message || "An error occurred.");
     } finally {
       setLoading(false);
@@ -117,26 +130,26 @@ const TAddNewSection = () => {
               {/* File Upload */}
               <div className="flex flex-col">
                 <label htmlFor="pdfFile" className="text-gray-600 text-sm mb-1">
-                  Upload PDF File
+                  Upload File (PDF or DOCX)
                 </label>
                 <input
                   type="file"
                   id="pdfFile"
-                  accept=".pdf"
+                  accept=".pdf,.docx"
                   onChange={(e) => setPdfFile(e.target.files[0])}
                   className="border border-gray-300 rounded-lg p-2"
                   required
                 />
                 <button
                   type="button"
-                  onClick={handlePdfFileUpload}
+                  onClick={handleFileUpload}
                   className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                   disabled={loading}
                 >
-                  {loading ? "Uploading..." : "Upload PDF"}
+                  {loading ? "Uploading..." : "Upload File"}
                 </button>
                 {pdfFileUrl && (
-                  <p className="text-sm text-green-600 mt-2">PDF uploaded successfully!</p>
+                  <p className="text-sm text-green-600 mt-2">File uploaded successfully!</p>
                 )}
               </div>
 

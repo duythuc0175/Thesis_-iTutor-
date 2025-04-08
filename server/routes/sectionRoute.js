@@ -11,97 +11,16 @@ const {
     getSectionById,
     getSelectedSections,
     getSectionPdfById,
-    confirmSectionsForCourse
+    confirmSectionsForCourse,
+    uploadFile
 } = require("../controllers/sectionController");
 
 // Add Section
 router.post("/add", auth, isTutor, addSection);
 
-// Upload PDF file
-router.post("/upload-file", auth, isTutor, upload.single("file"), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: "No file uploaded",
-            });
-        }
-
-        // Check file type
-        const allowedTypes = ["application/pdf"];
-        if (!allowedTypes.includes(req.file.mimetype)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid file type. Only PDF files are allowed.",
-            });
-        }
-
-        // Upload the file to Cloudinary
-        const fileUrl = await uploadFileToCloudinary(req.file.path);
-
-        res.status(200).json({
-            success: true,
-            message: "File uploaded successfully.",
-            fileUrl,
-        });
-    } catch (error) {
-        console.error("Error uploading file:", error.message);
-        res.status(500).json({
-            success: false,
-            message: "Error uploading file.",
-            error: error.message,
-        });
-    }
-});
-
-// Upload Section with PDF file
-router.post("/upload", auth, isTutor, upload.single("file"), async (req, res) => {
-    try {
-        // Log the incoming request body and file
-        console.log("Request Body:", req.body);
-        console.log("Uploaded File:", req.file);
-
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: "No file uploaded",
-            });
-        }
-
-        const { sectionName, courseIds } = req.body;
-
-        if (!sectionName) {
-            return res.status(400).json({
-                success: false,
-                message: "Section name is required.",
-            });
-        }
-
-        // Upload the file to Cloudinary
-        const pdfFile = await uploadFileToCloudinary(req.file.path);
-
-        const result = await addSection({
-            sectionName,
-            pdfFile,
-            courseIds,
-            tutorId: req.user._id,
-        });
-
-        res.status(201).json({
-            success: true,
-            message: "Section uploaded successfully.",
-            data: result,
-        });
-    } catch (error) {
-        console.error("Error in /upload route:", error.message);
-        res.status(500).json({
-            success: false,
-            message: "Error uploading section.",
-            error: error.message,
-        });
-    }
-});
-
+// Route for uploading files to S3
+router.post("/upload-file", auth, isTutor, upload.single("file"), uploadFile);
+  
 // Get Selected Sections by IDs
 router.post("/get-selected", auth, async (req, res) => {
     try {
@@ -137,8 +56,6 @@ router.get("/course/:courseId", getSectionsByCourseId);
 // Public: Get Sections by Tutor ID
 router.get("/tutor", auth, getSectionsByTutor);
 
-router.get("/:sectionId", getSectionById); 
-
 // Public: Get PDF File by Section ID
 router.get("/:sectionId/pdf", async (req, res) => {
     try {
@@ -166,5 +83,8 @@ router.put("/:sectionId", auth, isTutor, updateSectionById);
 
 // Delete Section by ID
 router.delete("/:sectionId", auth, isTutor, deleteSectionById);
+
+// Get a Section by ID
+router.get("/:sectionId", getSectionById);
 
 module.exports = router;

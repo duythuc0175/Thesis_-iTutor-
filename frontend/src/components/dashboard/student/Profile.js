@@ -45,7 +45,7 @@ export default function Profile() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.put(
+      await axios.put(
         "http://localhost:4000/api/v1/profile/student",
         formData,
         {
