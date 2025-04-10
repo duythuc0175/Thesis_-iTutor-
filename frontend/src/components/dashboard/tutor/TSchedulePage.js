@@ -24,64 +24,62 @@ export default function TSchedulePage() {
   const fetchClasses = async () => {
     setFetchingClasses(true);
     try {
-      const token = localStorage.getItem("token");
-  
-      if (!token) {
-        console.error("No authentication token found");
-        return;
-      }
-  
-      // Use the acceptedClasses endpoint
-      const response = await fetch("http://localhost:4000/api/v1/classes/accepted-classes", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-  
-      if (response.status === 401) {
-        console.error("Authentication token expired or invalid");
-        return;
-      }
-  
-      const data = await response.json();
-  
-      if (response.ok) {
-        // Log the raw data to see its structure
-        console.log("Raw API response:", data);
-        
-        // The API returns classRequests instead of acceptedClasses
-        const classItems = data.acceptedClasses || [];
-        
-        // Transform the class requests into calendar events
-        const transformedEvents = classItems.map(classItem => {
-          const startTime = new Date(classItem.time);
-          const validStartTime = isNaN(startTime.getTime()) ? new Date() : startTime;
-          const endTime = new Date(validStartTime.getTime() + (classItem.duration || 60) * 60000);
-          
-          console.log(classItem.student)
-          return {
-            id: classItem._id,
-            title: classItem.course?.courseName || "Untitled Class",
-            start: validStartTime,
-            end: endTime,
-            description: classItem.course?.courseDescription || "No description provided",
-            meetLink: classItem.classLink || "",
-            studentName: classItem.student?.firstName || classItem.student?.email || "Unknown Student",
-            type: classItem.type // Personal or Group
-          };
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            console.error("No authentication token found");
+            return;
+        }
+
+        // Fetch both personal and group classes
+        const response = await fetch("http://localhost:4000/api/v1/classes/accepted-classes", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
         });
-  
-        console.log("Transformed events:", transformedEvents);
-        setEvents(transformedEvents);
-      } else {
-        console.error("Failed to fetch accepted classes:", data.error);
-      }
+
+        if (response.status === 401) {
+            console.error("Authentication token expired or invalid");
+            return;
+        }
+
+        const data = await response.json();
+
+        if (response.ok) {
+            console.log("Raw API response:", data);
+
+            // Combine personal and group classes into events
+            const classItems = data.acceptedClasses || [];
+            const transformedEvents = classItems.map(classItem => {
+                const startTime = new Date(classItem.time);
+                const validStartTime = isNaN(startTime.getTime()) ? new Date() : startTime;
+                const endTime = new Date(validStartTime.getTime() + (classItem.duration || 60) * 60000);
+
+                return {
+                    id: classItem._id,
+                    title: classItem.course?.courseName || "Untitled Class",
+                    start: validStartTime,
+                    end: endTime,
+                    description: classItem.course?.courseDescription || "No description provided",
+                    meetLink: classItem.classLink || "",
+                    studentName: classItem.type === "Personal" 
+                        ? classItem.student?.firstName || classItem.student?.email || "Unknown Student"
+                        : "Group Class",
+                    type: classItem.type // Personal or Group
+                };
+            });
+
+            console.log("Transformed events:", transformedEvents);
+            setEvents(transformedEvents);
+        } else {
+            console.error("Failed to fetch accepted classes:", data.error);
+        }
     } catch (error) {
-      console.error("Error fetching accepted classes:", error);
+        console.error("Error fetching accepted classes:", error);
     } finally {
-      setFetchingClasses(false);
+        setFetchingClasses(false);
     }
   };
 
@@ -185,32 +183,32 @@ export default function TSchedulePage() {
   
   const deleteEvent = async (eventId) => {
     try {
-      const token = localStorage.getItem("token");
-      
-      if (!token) {
-        console.error("No authentication token found");
-        return;
-      }
-      
-      const response = await fetch(`http://localhost:4000/api/v1/classes/${eventId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            console.error("No authentication token found");
+            return;
         }
-      });
-      
-      if (response.ok) {
-        setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
-      } else {
-        const data = await response.json();
-        console.error("Failed to delete class:", data.error);
-        alert("Failed to delete class: " + (data.error || "Unknown error"));
-      }
+
+        const response = await fetch(`http://localhost:4000/api/v1/classes/${eventId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (response.ok) {
+            setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId));
+        } else {
+            const data = await response.json();
+            console.error("Failed to delete class:", data.message);
+            alert("Failed to delete class: " + (data.message || "Unknown error"));
+        }
     } catch (error) {
-      console.error("Error deleting class:", error);
+        console.error("Error deleting class:", error);
     }
-  };
+};
 
   const goToToday = () => {
     setSelectedDate(new Date());

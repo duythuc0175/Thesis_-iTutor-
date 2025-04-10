@@ -23,4 +23,10 @@ router.post("/create-group-class/:courseId", auth, isTutor, classController.crea
 
 router.get("/group-classes/:courseId", auth, classController.getGroupClasses);
 
+// Route to get available group class times for a course
+router.get("/available-group-times/:courseId", auth, isStudent, classController.getAvailableGroupTimes);
+
+// Route to delete a class by ID (Tutor only)
+router.delete("/:classId", auth, isTutor, classController.deleteClassById);
+
 module.exports = router;

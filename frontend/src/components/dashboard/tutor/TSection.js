@@ -1,170 +1,88 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
+import { IoArrowBack } from "react-icons/io5";
 import Header from "../Header";
 
 export default function TSection() {
   const { sectionId } = useParams(); // Get section ID from URL
   const [section, setSection] = useState(null);
-  const [message, setMessage] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchSection = async () => {
+    const fetchSectionDetails = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          setMessage({
-            type: "error",
-            text: "Authentication token is missing. Please log in.",
-          });
+          alert("Authentication token is missing. Please log in.");
           return;
         }
 
         const response = await axios.get(
           `http://localhost:4000/api/v1/sections/${sectionId}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
         if (response.status === 200) {
-          setSection(response.data.data);
+          setSection(response.data.data); // Set the fetched section data
         }
       } catch (error) {
-        const errorMessage =
-          error.response?.data?.message || "An error occurred.";
-        setMessage({ type: "error", text: errorMessage });
+        console.error("Error fetching section details:", error);
+        alert("An error occurred while fetching the section details.");
       }
     };
 
-    fetchSection();
+    fetchSectionDetails();
   }, [sectionId]);
+
+  if (!section) {
+    return <div className="p-8 text-center text-xl text-gray-700">Loading section details...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <Header/>
-      {/* Back Button */}
+      <Header />
       <button
         onClick={() => navigate(-1)}
-        className="mb-4 px-4 py-2 bg-gray-300 text-gray-800 rounded shadow hover:bg-gray-400"
+        className="flex items-center mb-6 text-blue-600 font-bold hover:underline"
       >
+        <IoArrowBack className="mr-2 text-2xl" />
         Back
       </button>
 
-      {/* Feedback Message */}
-      {message && (
-        <div
-          className={`p-4 mb-4 rounded ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {message.text}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h1 className="text-3xl font-bold mb-4">{section.sectionName}</h1>
+
+        {/* File Display */}
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold mb-2">File:</h2>
+          {section.pdfFile ? (
+            section.pdfFile.endsWith(".pdf") ? (
+              <iframe
+                src={section.pdfFile}
+                title="PDF Viewer"
+                width="100%"
+                height="800px"
+                className="border rounded"
+              ></iframe>
+            ) : section.pdfFile.endsWith(".docx") ? (
+              <a
+                href={section.pdfFile}
+                className="inline-block bg-blue-600 text-white font-medium px-4 py-2 rounded hover:bg-blue-700 transition"
+                download
+              >
+                Download DOCX File
+              </a>
+            ) : (
+              <p className="text-gray-500">Unsupported file format.</p>
+            )
+          ) : (
+            <p className="text-gray-500">No file available for this section.</p>
+          )}
         </div>
-      )}
-
-      {/* Section Details */}
-      {section ? (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">
-            {section.sectionName}
-          </h1>
-
-          {/* Video Player */}
-          <div className="mb-4">
-            <p className="text-gray-600 mb-2">
-              <strong>Video:</strong>
-            </p>
-            <video
-              controls
-              className="w-full max-w-xl rounded shadow-lg"
-              src={section.videoFile}
-            >
-              Your browser does not support the video tag.
-            </video>
-          </div>
-
-          {/* File Download */}
-          <div className="mb-4">
-            <p className="text-gray-600 mb-2">
-              <strong>Files:</strong>
-            </p>
-            {section.files && section.files.length > 0 ? (
-              <ul className="list-disc list-inside">
-                {section.files.map((file, index) => (
-                  <li key={index}>
-                    <a
-                      href={file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {file.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500">No files available</p>
-            )}
-          </div>
-
-          <p className="text-gray-600 mb-2">
-            <strong>Tutor:</strong> {section.tutorId?.name || "N/A"} (
-            {section.tutorId?.email || "N/A"})
-          </p>
-          <p className="text-gray-600 mb-2">
-            <strong>Associated Courses:</strong>
-          </p>
-          <ul className="list-disc list-inside mb-4">
-            {section.courseIds && section.courseIds.length > 0 ? (
-              section.courseIds.map((course) => (
-                <li key={course._id}>{course.courseName}</li>
-              ))
-            ) : (
-              <li>No associated courses</li>
-            )}
-          </ul>
-          <p className="text-gray-600 mb-2">
-            <strong>Quiz:</strong>
-          </p>
-          <ul className="list-disc list-inside mb-4">
-            {section.quiz && section.quiz.length > 0 ? (
-              section.quiz.map((question, index) => (
-                <li key={index} className="mb-2">
-                  <strong>Question:</strong> {question.questionText}
-                  <ul className="list-decimal list-inside pl-4 mt-1">
-                    {question.options.map((option, idx) => (
-                      <li
-                        key={idx}
-                        className={
-                          option.isCorrect
-                            ? "text-green-600 font-semibold"
-                            : "text-gray-800"
-                        }
-                      >
-                        {option.optionText}
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))
-            ) : (
-              <li>No quiz available</li>
-            )}
-          </ul>
-          <p className="text-gray-600 mb-2">
-            <strong>Created At:</strong>{" "}
-            {new Date(section.createdAt).toLocaleString()}
-          </p>
-        </div>
-      ) : (
-        <p className="text-gray-500">Loading section details...</p>
-      )}
+      </div>
     </div>
   );
 }

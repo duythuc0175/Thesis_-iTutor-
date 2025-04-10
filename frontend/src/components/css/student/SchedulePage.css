@@ -1,119 +1,136 @@
-/* Main container styling */
+/* Page container */
 .schedule-container {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, #f7f7f7, #e6e6e6);
-  padding: 1.5rem;
-}
-
-.schedule-content {
-  max-width: 64rem;
-  margin: 0 auto;
-  background-color: white;
-  border-radius: 1rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  background-color: #f3f4f6;
   padding: 2rem;
 }
 
-/* Header styling */
+/* Calendar card */
+.schedule-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+/* Page title */
+.main-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Header controls */
 .header-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
-.main-title {
-  font-size: 2.25rem;
-  font-weight: 800;
-  color: #1f2937;
+.refresh-btn {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.refresh-btn:hover {
+  background-color: #2563eb;
 }
 
-/* Controls container */
+/* Toggle and navigation */
 .controls-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-/* View toggle buttons */
 .view-toggle {
   display: flex;
   gap: 0.5rem;
 }
 
 .toggle-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  display: flex;
-  align-items: center;
   background-color: #e5e7eb;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
 }
-
 .toggle-btn.active-toggle {
   background-color: #3b82f6;
   color: white;
 }
 
-/* Navigation controls */
 .navigation-controls {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.today-btn {
-  padding: 0.5rem 1rem;
-  background-color: #22c55e;
-  color: white;
-  border-radius: 0.25rem;
-}
-
-.today-btn:hover {
-  background-color: #16a34a;
-}
-
+.today-btn,
 .nav-btn {
-  padding: 0.5rem 1rem;
-  background-color: #e5e7eb;
-  border-radius: 0.25rem;
+  background-color: #10b981;
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
 }
-
-.nav-btn:hover {
+.nav-btn {
   background-color: #d1d5db;
+  color: #1f2937;
+}
+.today-btn:hover {
+  background-color: #059669;
+}
+.nav-btn:hover {
+  background-color: #9ca3af;
 }
 
 .date-title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 /* Calendar grid */
 .grid-calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 140px;
   gap: 0.5rem;
+  text-align: left;
+}
+
+/* Day names */
+.day-header {
+  font-weight: 600;
+  color: #4b5563;
+  padding-bottom: 0.5rem;
   text-align: center;
 }
 
-.day-header {
-  font-weight: 700;
-  color: #4b5563;
-  padding: 0.5rem;
-}
-
+/* Each calendar cell */
 .calendar-cell {
   border: 1px solid #e5e7eb;
   padding: 0.5rem;
-  min-height: 100px;
   background-color: white;
-}
-
-.week-cell {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
+  justify-content: flex-start;
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .cell-inactive {
@@ -121,174 +138,86 @@
 }
 
 .cell-today {
-  background-color: #fef3c7;
+  background-color: #fffbea;
+  border: 2px solid #facc15;
 }
 
 .date-number {
   font-size: 0.875rem;
   color: #6b7280;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
 }
 
-/* Event styling */
+/* Event card */
 .event-item {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border-radius: 0.25rem;
-  padding: 0.25rem;
-  margin-top: 0.25rem;
+  background-color: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 6px 8px;
+  margin-top: 4px;
   font-size: 0.75rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.event-item:hover {
+  background-color: #f3f4f6;
+  transform: translateY(-1px);
+}
+
+.event-title {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+}
+
+.event-time,
+.event-details {
+  font-size: 0.75rem;
+  color: #4b5563;
+  margin-bottom: 2px;
+}
+
+.tutor-name {
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.meet-link {
+  color: #10b981;
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 0.75rem;
+}
+.meet-link:hover {
+  text-decoration: underline;
 }
 
 .delete-btn {
+  background: none;
+  border: none;
   color: #ef4444;
+  font-size: 1rem;
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  cursor: pointer;
 }
-
 .delete-btn:hover {
-  color: #b91c1c;
+  color: #dc2626;
 }
 
-/* Add event button */
-.add-event-btn-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 1.5rem;
-}
-
-.add-event-btn {
-  padding: 0.5rem 1rem;
-  background-color: #3b82f6;
-  color: white;
-  border-radius: 0.25rem;
-  font-weight: 600;
-}
-
-.add-event-btn:hover {
-  background-color: #2563eb;
-}
-
-/* Modal styling */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-container {
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  width: 24rem;
-  padding: 1.5rem;
-}
-
-.modal-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-/* Form styling */
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: space-between;
-}
-
-.save-btn {
-  padding: 0.5rem 1rem;
-  background-color: #3b82f6;
-  color: white;
-  border-radius: 0.25rem;
-}
-
-.save-btn:hover {
-  background-color: #2563eb;
-}
-
-.cancel-btn {
-  padding: 0.5rem 1rem;
-  background-color: #ef4444;
-  color: white;
-  border-radius: 0.25rem;
-}
-
-.cancel-btn:hover {
-  background-color: #dc2626;
-}
-
-.individual-event {
-  background-color: #e8f4fd;
-  border-left: 3px solid #3498db;
-}
-
-.group-event {
-  background-color: #fce8ef;
-  border-left: 3px solid #a5e73c;
-}
-
-/* Legend for event types */
-.legend-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 15px;
-  gap: 20px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.legend-color {
-  width: 15px;
-  height: 15px;
-  border-radius: 3px;
-}
-
-.individual-color {
-  background-color: #e8f4fd;
-  border-left: 3px solid #3498db;
-}
-
-.group-color {
-  background-color: #fce8ef;
-  border-left: 3px solid #a5e73c;
-}
-
-/* Button styling */
-.refresh-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.group-refresh {
-  background-color: #e74c3c;
-}
-
-.group-refresh:hover {
-  background-color: #c0392b;
+/* Empty and error messages */
+.loading-container,
+.no-events-message {
+  text-align: center;
+  color: #6b7280;
+  font-size: 1rem;
+  margin-top: 2rem;
 }

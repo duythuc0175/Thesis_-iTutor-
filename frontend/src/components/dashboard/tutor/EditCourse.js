@@ -137,6 +137,29 @@ const EditCourse = ({ courseId, onClose, onUpdate }) => {
         }
     };
 
+    const handleDelete = async () => {
+        const token = localStorage.getItem("token");
+        const confirmDelete = window.confirm("Are you sure you want to delete this course?");
+        if (!confirmDelete) return;
+
+        try {
+            const response = await axios.delete(`http://localhost:4000/api/v1/courses/${courseId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.data.success) {
+                alert("Course deleted successfully!");
+                onClose(); // Close the modal
+                onUpdate(); // Refresh the course list
+            } else {
+                alert("Failed to delete course");
+            }
+        } catch (error) {
+            console.error("Error deleting course:", error);
+            alert("An error occurred while deleting the course.");
+        }
+    };
+
     return (
         <div className="modal-overlay">
             <div className="modal-content">
@@ -178,8 +201,31 @@ const EditCourse = ({ courseId, onClose, onUpdate }) => {
                             <option value="Published">Published</option>
                         </select>
                     </div>
-                    <button type="submit" className='bg-blue-600 text-white p-2 rounded'>Update Course</button>
-                    <button type="button" className='bg-gray-600 text-white p-2 rounded ml-2' onClick={onClose}>Cancel</button>
+                    <div className="button-container mt-4 flex justify-end gap-4">
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
+                        >
+                            Update
+                        </button>
+
+                        <button
+                            type="button"
+                            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
+                            onClick={onClose}
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="button"
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
+                            onClick={handleDelete}
+                        >
+                            Delete
+                        </button>
+
+                    </div>
                 </form>
             </div>
         </div>

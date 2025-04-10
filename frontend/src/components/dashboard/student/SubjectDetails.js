@@ -88,6 +88,7 @@ export default function SubjectDetails() {
     fetchCourse();
     fetchRatingsAndReviews();
     checkEnrollment();
+    fetchAvailableGroupTimes(); // Fetch available group times
   }, [id]);
 
   const handleEnroll = async () => {
@@ -125,7 +126,11 @@ export default function SubjectDetails() {
   const fetchAvailableGroupTimes = async () => {
     try {
       const response = await axios.get(`http://localhost:4000/api/v1/classes/available-group-times/${id}`);
-      setAvailableGroupTimes(response.data.data);
+      if (response.data.success) {
+        setAvailableGroupTimes(response.data.data);
+      } else {
+        console.error("Error fetching available group times:", response.data.message);
+      }
     } catch (error) {
       console.error("Error fetching available group times:", error);
     }

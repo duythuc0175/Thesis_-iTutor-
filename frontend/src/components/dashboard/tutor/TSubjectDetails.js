@@ -15,18 +15,22 @@ export default function TSubjectDetails() {
     classLink: "",
   });
   const [error, setError] = useState("");
+  const [sections, setSections] = useState([]); // State to store sections
 
   useEffect(() => {
-    const fetchCourse = async () => {
+    const fetchCourseAndSections = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/courses/${id}`);
-        setCourse(response.data.data); // Set the fetched course data
+        const courseResponse = await axios.get(`http://localhost:4000/api/v1/courses/${id}`);
+        setCourse(courseResponse.data.data);
+
+        const sectionsResponse = await axios.get(`http://localhost:4000/api/v1/sections/course/${id}`);
+        setSections(sectionsResponse.data.data); // Set the fetched sections
       } catch (error) {
-        console.error("Error fetching course:", error);
+        console.error("Error fetching course or sections:", error);
       }
     };
 
-    fetchCourse();
+    fetchCourseAndSections();
   }, [id]);
 
   const handleRedirect = () => {
@@ -67,6 +71,24 @@ export default function TSubjectDetails() {
     } catch (error) {
       console.error("Error creating group class:", error);
       setError(error.response?.data?.error || "An error occurred. Please try again.");
+    }
+  };
+
+  const handleDeleteSection = async (sectionId) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this section?");
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:4000/api/v1/sections/${sectionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      alert("Section deleted successfully!");
+      setSections((prevSections) => prevSections.filter((section) => section._id !== sectionId));
+    } catch (error) {
+      console.error("Error deleting section:", error);
+      alert("Failed to delete section.");
     }
   };
 
@@ -151,6 +173,32 @@ export default function TSubjectDetails() {
                 : "No students enrolled."}
             </span>
           </h2>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold text-blue-700 mb-4">Course Sections</h2>
+          {sections.length > 0 ? (
+            <ul className="details-list">
+              {sections.map((section) => (
+                <li key={section._id} className="flex justify-between items-center">
+                  <span
+                    className="cursor-pointer text-blue-600 hover:underline"
+                    onClick={() => navigate(`/dashboard/tutor/section/${section._id}`)}
+                  >
+                    {section.sectionName}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteSection(section._id)}
+                    className="text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-600">No sections available for this course.</p>
+          )}
         </section>
 
         {/* Add Sections Button */}

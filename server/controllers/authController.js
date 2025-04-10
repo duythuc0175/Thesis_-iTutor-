@@ -3,65 +3,77 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 require("dotenv").config();
 const path = require('path');
+const multer = require("multer");
+const upload = multer(); // In-memory storage for file uploads
 
 // Controller for user signup
-exports.signup = async (req, res) => {
-  try {
-    const { firstName, lastName, email, password, accountType, resumePath } = req.body;
+exports.signup = [
+  async (req, res) => {
+    try {
+      console.log("Incoming request body:", req.fields); // Log request body
+      console.log("Incoming file:", req.fields); // Log file if applicable
 
-    if (!firstName || !lastName || !email || !password || !accountType) {
-      return res.status(400).json({
+      
+      const { firstName, lastName, email, password, accountType, resumePath } = req.fields;
+
+      if (!firstName || !lastName || !email || !password || !accountType) {
+        console.error("Validation error: Missing required fields");
+        return res.status(400).json({
+          success: false,
+          message: "First name, last name, email, password, and account type are required",
+        });
+      }
+
+      if (accountType === "Tutor" && !resumePath) {
+        console.error("Validation error: Missing resume for Tutor account");
+        return res.status(400).json({
+          success: false,
+          message: "Resume is required for Tutor accounts",
+        });
+      }
+
+      if (password.length < 8) {
+        console.error("Validation error: Password too short");
+        return res.status(400).json({
+          success: false,
+          message: "Password must be at least 8 characters long",
+        });
+      }
+
+      const existingUser = await User.findOne({ email, accountType });
+      if (existingUser) {
+        console.error("Validation error: Account already exists");
+        return res.status(400).json({
+          success: false,
+          message: `An account with this email already exists as a ${accountType}. Please log in or choose a different account type.`,
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const user = await User.create({
+        firstName,
+        lastName,
+        email,
+        password: hashedPassword,
+        accountType,
+        resumePath: accountType === "Tutor" ? resumePath : null,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: `${accountType} account registered successfully`,
+        user: { id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email, accountType: user.accountType,resumePath: user.resumePath },
+      });
+    } catch (error) {
+      console.error("Error during signup:", error.message);
+      return res.status(500).json({
         success: false,
-        message: "First name, last name, email, password, and account type are required",
+        message: error.message || "Internal server error during signup",
       });
     }
-
-    if (accountType === "Tutor" && !resumePath) {
-      return res.status(400).json({
-        success: false,
-        message: "Resume is required for Tutor accounts",
-      });
-    }
-
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters long",
-      });
-    }
-
-    const existingUser = await User.findOne({ email, accountType });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: `An account with this email already exists as a ${accountType}. Please log in or choose a different account type.`,
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      accountType,
-      resumePath: accountType === "Tutor" ? resumePath : null,
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: `${accountType} account registered successfully`,
-      user: { id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email, accountType: user.accountType,resumePath: user.resumePath },
-    });
-  } catch (error) {
-    console.error("Error during signup:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error during signup",
-    });
-  }
-};
+  },
+];
 
 // Controller for user login
 exports.login = async (req, res) => {

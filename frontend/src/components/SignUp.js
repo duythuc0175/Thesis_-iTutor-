@@ -49,40 +49,33 @@ export default function SignUp() {
       setError("Please select a file to upload.");
       return;
     }
-
-    // Ensure the selected file is a PDF
+  
     if (file.type !== "application/pdf") {
       setError("Only PDF files are allowed.");
       return;
     }
-
-    setError(null); // Clear previous errors
+  
+    setError(null);
     setLoading(true);
-
+  
     try {
-      // Create a FormData object to send the file
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("upload_preset", "edulink_uploads"); // Cloudinary-specific upload preset
-      formData.append("cloud_name", "dhgyagjqw"); // Cloudinary cloud name
-      formData.append("folder", "tutor_resumes"); // Folder for uploaded resumes
-
-      // Upload file to Cloudinary
-      const res = await fetch("https://api.cloudinary.com/v1_1/dhgyagjqw/upload", {
+  
+      const response = await fetch("http://localhost:4000/api/v1/profile/upload/cv", {
         method: "POST",
         body: formData,
       });
-
-      const uploadedFile = await res.json();
-      console.log(uploadedFile)
-      if (uploadedFile.url) {
-        // Update formData with the uploaded file URL
+  
+      const result = await response.json();
+  
+      if (response.ok) {
         setFormData((prev) => ({
           ...prev,
-          resumePath: uploadedFile.url,
+          resumePath: result.fileUrl,
         }));
       } else {
-        throw new Error("Failed to upload the file. Please try again.");
+        throw new Error(result.message || "Failed to upload the file.");
       }
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -95,6 +88,7 @@ export default function SignUp() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate required fields
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword) {
       setError("All fields are required.");
       return;
@@ -108,31 +102,38 @@ export default function SignUp() {
       return;
     }
 
+    // Prepare payload
     const payload = new FormData();
     payload.append("firstName", formData.firstName);
     payload.append("lastName", formData.lastName);
     payload.append("email", formData.email);
     payload.append("password", formData.password);
     payload.append("accountType", field);
-    if (formData.resumePath && field === "Tutor") {
+    if (field === "Tutor" && formData.resumePath) {
       payload.append("resumePath", formData.resumePath);
     }
+
+    console.log("Payload being sent:", [...payload.entries()]); // Log payload for debugging
 
     try {
       setLoading(true);
       setError(null);
-      await axios.post("http://localhost:4000/api/v1/auth/signup", payload, {
+
+      // Make the API request
+      const response = await axios.post("http://localhost:4000/api/v1/auth/signup", payload, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      // Handle success
       setSuccessMessage("Signup successful! Redirecting to home...");
       setTimeout(() => {
         setSuccessMessage(null);
         navigate("/");
       }, 2500);
     } catch (err) {
-      console.error(err);
+      console.error("Error during signup:", err.response?.data || err.message);
       setError(err.response?.data?.message || "An error occurred during signup.");
     } finally {
       setLoading(false);

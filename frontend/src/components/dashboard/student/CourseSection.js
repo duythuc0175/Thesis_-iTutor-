@@ -40,15 +40,27 @@ const CourseSection = () => {
 
         {/* File Display */}
         <div className="mb-4">
-          <h2 className="text-xl font-semibold">File:</h2>
+          <h2 className="text-xl font-semibold mb-2">File:</h2>
           {section.pdfFile ? (
-            <iframe
-              src={section.pdfFile}
-              title="File Viewer"
-              width="100%"
-              height="800px"
-              className="border rounded"
-            ></iframe>
+            section.pdfFile.endsWith(".pdf") ? (
+              <iframe
+                src={section.pdfFile}
+                title="PDF Viewer"
+                width="100%"
+                height="800px"
+                className="border rounded"
+              ></iframe>
+            ) : section.pdfFile.endsWith(".docx") ? (
+              <a
+                href={`http://localhost:4000/api/v1/sections/${section._id}/pdf`}
+                className="inline-block bg-blue-600 text-white font-medium px-4 py-2 rounded hover:bg-blue-700 transition"
+                download
+              >
+                Download DOCX File
+              </a>
+            ) : (
+              <p className="text-gray-500">Unsupported file format.</p>
+            )
           ) : (
             <p className="text-gray-500">No file available for this section.</p>
           )}

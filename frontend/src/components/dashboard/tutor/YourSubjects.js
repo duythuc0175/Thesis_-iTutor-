@@ -11,37 +11,37 @@ export default function YourSubjects() {
   const [selectedCourseId, setSelectedCourseId] = useState(null); // State to hold the selected course ID
   const [isEditModalOpen, setEditModalOpen] = useState(false); // State to control the edit modal
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          alert("Authentication token is missing. Please log in.");
-          return;
-        }
-
-        // Decode the token to get tutorId
-        const base64Url = token.split(".")[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const payload = JSON.parse(atob(base64));
-        const tutorId = payload.id; // Extract tutor ID from token
-
-        const response = await axios.get("http://localhost:4000/api/v1/courses", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.data.success) {
-          const tutorCourses = response.data.data.filter(course => course.tutor._id.toString() === tutorId);
-          setCourses(tutorCourses || []); // Ensure courses is always an array
-        } else {
-          alert("Failed to load courses");
-        }
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-        alert("An error occurred while fetching the courses.");
+  const fetchCourses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Authentication token is missing. Please log in.");
+        return;
       }
-    };
 
+      // Decode the token to get tutorId
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const payload = JSON.parse(atob(base64));
+      const tutorId = payload.id; // Extract tutor ID from token
+
+      const response = await axios.get("http://localhost:4000/api/v1/courses", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        const tutorCourses = response.data.data.filter(course => course.tutor._id.toString() === tutorId);
+        setCourses(tutorCourses || []); // Ensure courses is always an array
+      } else {
+        alert("Failed to load courses");
+      }
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+      alert("An error occurred while fetching the courses.");
+    }
+  };
+
+  useEffect(() => {
     fetchCourses();
   }, []);
 
@@ -57,6 +57,7 @@ export default function YourSubjects() {
   const handleCloseEditModal = () => {
     setEditModalOpen(false); // Close the edit modal
     setSelectedCourseId(null); // Reset the selected course ID
+    fetchCourses(); // Refresh the course list
   };
 
   return (
@@ -109,10 +110,7 @@ export default function YourSubjects() {
           <EditCourse
             courseId={selectedCourseId}
             onClose={handleCloseEditModal}
-            onUpdate={() => {
-              handleCloseEditModal();
-              // Optionally, refresh the course list here
-            }}
+            onUpdate={fetchCourses} // Refresh the course list after update or delete
           />
         )}
       </div>

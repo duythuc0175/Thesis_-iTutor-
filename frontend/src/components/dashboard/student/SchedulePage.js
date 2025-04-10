@@ -216,12 +216,6 @@ export default function SchedulePage() {
                               </a>
                             )}
                           </div>
-                          <button 
-                            onClick={() => deleteEvent(event.id)}
-                            className="delete-btn"
-                          >
-                            ✖
-                          </button>
                         </div>
                       ))
                     ) : null}
@@ -271,12 +265,6 @@ export default function SchedulePage() {
                               </a>
                             )}
                           </div>
-                          <button 
-                            onClick={() => deleteEvent(event.id)}
-                            className="delete-btn"
-                          >
-                            ✖
-                          </button>
                         </div>
                       ))
                     ) : null}

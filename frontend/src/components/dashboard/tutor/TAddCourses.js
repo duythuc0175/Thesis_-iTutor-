@@ -96,6 +96,9 @@ export default function TAddCourses() {
       const payload = JSON.parse(atob(base64));
       const userId = payload.id;
 
+      // Log form data for debugging
+      console.log("Submitting course data:", formData);
+
       const response = await axios.post(
         "http://localhost:4000/api/v1/courses/add",
         { ...formData, tutor: userId },
@@ -120,6 +123,7 @@ export default function TAddCourses() {
         });
       }
     } catch (error) {
+      console.error("Error posting course:", error.response?.data || error.message); // Log detailed error
       setMessage({ type: "error", text: error.response?.data?.message || "An error occurred." });
     }
   };
@@ -263,15 +267,6 @@ export default function TAddCourses() {
           </div>
 
           <div className="button-container">
-            <button 
-              onClick={handleRedirect} 
-              className="add-sections-button"
-              type="button"
-            >
-              <FiPlus />
-              Add Sections
-            </button>
-
             <button 
               type="submit" 
               className="submit-button"

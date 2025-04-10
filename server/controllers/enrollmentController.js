@@ -10,16 +10,27 @@ const findCourseById = async (courseId) => {
     return course;
 };
 
+// Helper function to find user by ID
 const findUserById = async (userId) => {
-    const user = await User.findById(userId);
-    if (!user) throw new Error("User not found");
-    return user;
+    try {
+        console.log("Searching for user with ID:", userId); // Log the user ID being searched
+        const user = await User.findById(userId);
+        if (!user) {
+            console.error("User not found with ID:", userId);
+            throw new Error("User not found");
+        }
+        return user;
+    } catch (error) {
+        console.error("Error finding user by ID:", error.message);
+        throw error;
+    }
 };
 
 // Enroll a Student in a Course
 exports.enrollInCourse = async (req, res) => {
     try {
-        const userId = req.user._id;
+        console.log("Authenticated user:", req.user); // Log the authenticated user
+        const userId = req.user.id;
         const { courseId } = req.params;
 
         const course = await findCourseById(courseId);

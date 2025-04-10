@@ -25,9 +25,13 @@ exports.addCourse = async (req, res) => {
             status,
         } = req.body;
 
+        // Validate required fields
         if (!courseName || !category || !tag) {
             return res.status(400).json({ success: false, message: "Course name, category, and tag are required." });
         }
+
+        // Log incoming data for debugging
+        console.log("Incoming course data:", req.body);
 
         const existingCourse = await Course.findOne({ courseName });
         if (existingCourse) {
@@ -39,10 +43,11 @@ exports.addCourse = async (req, res) => {
             categoryObj = await Category.create({ name: category });
         }
 
+        // Ensure the tutor field is set from the authenticated user
         const newCourse = await Course.create({
             courseName,
             courseDescription: courseDescription || null,
-            tutor: req.user._id,
+            tutor: req.user._id, // Set the tutor field
             whatYouWillLearn: whatYouWillLearn || null,
             courseContent: courseContent || [],
             price: price || null,
@@ -53,13 +58,12 @@ exports.addCourse = async (req, res) => {
             status: status || "Draft",
         });
 
-        //await Section.updateMany({ courseIds: { $ne: newCourse._id } }, { $addToSet: { courseIds: newCourse._id } });
-
         categoryObj.courses.push(newCourse._id);
         await categoryObj.save();
 
         return res.status(201).json({ success: true, message: "Course created successfully.", data: newCourse });
     } catch (error) {
+        console.error("Error in addCourse:", error.message); // Log detailed error
         return res.status(500).json({ success: false, message: "Error occurred while creating the course.", error: error.message });
     }
 };

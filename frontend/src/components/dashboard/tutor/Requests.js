@@ -39,31 +39,33 @@ export default function Requests() {
         });
 
         const requestsWithCourses = await Promise.all(
-          response.data.classRequests.map(async (req) => {
-            const courseResponse = await axios.get(
-              `http://localhost:4000/api/v1/courses/${req.course._id}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
-            const courseName = courseResponse.data.data.courseName || "Unknown Course";
-            return {
-              id: req._id,
-              student: req.student.email,
-              topic: courseName,
-              courseId: req.course._id,
-              date: new Date(req.time).toLocaleDateString(),
-              time: new Date(req.time).toLocaleTimeString(),
-              status: req.status,
-              type: req.type,
-              duration: req.duration || "Not specified", // Ensure duration is included
-              isNew: req.status === "Pending",
-            };
-          })
+          response.data.classRequests
+            .filter((req) => req && req._id && req.course && req.course._id) // Filter out invalid requests
+            .map(async (req) => {
+              const courseResponse = await axios.get(
+                `http://localhost:4000/api/v1/courses/${req.course._id}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                }
+              );
+              const courseName = courseResponse.data.data.courseName || "Unknown Course";
+              return {
+                id: req._id,
+                student: req.student?.email || "Unknown Student",
+                topic: courseName,
+                courseId: req.course._id,
+                date: req.time ? new Date(req.time).toLocaleDateString() : "No date provided",
+                time: req.time ? new Date(req.time).toLocaleTimeString() : "No time provided",
+                status: req.status || "Unknown",
+                type: req.type || "Unknown",
+                duration: req.duration || "Not specified", // Ensure duration is included
+                isNew: req.status === "Pending",
+              };
+            })
         );
-        
+
         setRequests(requestsWithCourses);
         setFilteredRequests(requestsWithCourses);
         setLoading(false);

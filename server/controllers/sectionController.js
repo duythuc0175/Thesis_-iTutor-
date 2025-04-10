@@ -273,39 +273,27 @@ exports.getSectionPdfById = async (req, res) => {
     try {
         const { sectionId } = req.params;
 
-        // Validate the sectionId format
-        if (!mongoose.Types.ObjectId.isValid(sectionId)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid section ID format.",
-            });
+        const section = await Section.findById(sectionId);
+        if (!section || !section.pdfFile) {
+            return res.status(404).json({ success: false, message: "File not found." });
         }
 
-        const section = await Section.findById(sectionId).select("pdfFile sectionName");
+        const fileUrl = section.pdfFile;
+        const fileType = fileUrl.endsWith(".docx")
+            ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            : "application/pdf";
 
-        if (!section) {
-            return res.status(404).json({
-                success: false,
-                message: "Section not found.",
-            });
+        // Set headers for DOCX files to force download
+        if (fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+            res.setHeader("Content-Type", fileType);
+            res.setHeader("Content-Disposition", `attachment; filename="${fileUrl.split("/").pop()}"`);
         }
 
-        // Return the direct URL for viewing the PDF
-        return res.status(200).json({
-            success: true,
-            message: "PDF file fetched successfully.",
-            data: {
-                sectionName: section.sectionName,
-                pdfFile: section.pdfFile, // Direct URL to the PDF file
-            },
-        });
+        // Redirect to the file URL (PDFs will be previewed, DOCX will be downloaded)
+        res.redirect(fileUrl);
     } catch (error) {
-        console.error("Error fetching PDF file by section ID:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Error occurred while fetching the PDF file.",
-            error: error.message,
-        });
+        console.error("Error fetching file:", error.message);
+        res.status(500).json({ success: false, message: "Error fetching file.", error: error.message });
     }
 };
 
