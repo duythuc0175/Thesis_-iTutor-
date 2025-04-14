@@ -21,9 +21,13 @@ router.get("/accepted-classes", auth, classController.getAcceptedClasses);
 // Admin-only: Create a Group Class
 router.post("/create-group-class/:courseId", auth, isTutor, classController.createGroupClass);
 
-router.get("/group-classes/:courseId", auth, classController.getGroupClasses);
+// Route to get group classes for a course
+router.get("/group-classes/:courseId", auth, isStudent, classController.getGroupClasses);
 
-// Route to get available group class times for a course
+// Route for students to request to join a group class
+router.post("/join-group-class/:classId", auth, isStudent, classController.requestToJoinGroupClass);
+
+// Route to get available group times for a course
 router.get("/available-group-times/:courseId", auth, isStudent, classController.getAvailableGroupTimes);
 
 // Route to delete a class by ID (Tutor only)

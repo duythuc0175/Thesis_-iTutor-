@@ -25,6 +25,9 @@ export default function SubjectDetails() {
   const [isCheckingEnrollment, setIsCheckingEnrollment] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [groupClasses, setGroupClasses] = useState([]);
+  const [selectedGroupClass, setSelectedGroupClass] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -88,8 +91,36 @@ export default function SubjectDetails() {
     fetchCourse();
     fetchRatingsAndReviews();
     checkEnrollment();
-    fetchAvailableGroupTimes(); // Fetch available group times
+    fetchGroupClasses(); // Fetch group classes
   }, [id]);
+
+  const fetchGroupClasses = async () => {
+    try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            console.error("No authentication token found");
+            return;
+        }
+
+        const response = await axios.get(`http://localhost:4000/api/v1/classes/group-classes/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`, // Include the token in the request
+            },
+        });
+
+        console.log("API response for group classes:", response.data);
+
+        if (response.data.success) {
+            setGroupClasses(response.data.groupClasses || []); // Set the fetched group classes
+        } else {
+            console.error("Failed to fetch group classes:", response.data.message);
+            setGroupClasses([]); // Ensure the state is cleared if no data is returned
+        }
+    } catch (error) {
+        console.error("Error fetching group classes:", error);
+        setGroupClasses([]); // Ensure the state is cleared on error
+    }
+};
 
   const handleEnroll = async () => {
     try {
@@ -125,16 +156,29 @@ export default function SubjectDetails() {
 
   const fetchAvailableGroupTimes = async () => {
     try {
-      const response = await axios.get(`http://localhost:4000/api/v1/classes/available-group-times/${id}`);
-      if (response.data.success) {
-        setAvailableGroupTimes(response.data.data);
-      } else {
-        console.error("Error fetching available group times:", response.data.message);
-      }
+        const token = localStorage.getItem("token");
+        if (!token) {
+            console.error("No authentication token found");
+            return;
+        }
+
+        const response = await axios.get(`http://localhost:4000/api/v1/classes/available-group-times/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`, // Include the token in the request
+            },
+        });
+
+        if (response.data.success) {
+            setAvailableGroupTimes(response.data.data); // Set the available times
+        } else {
+            console.error("Failed to fetch available group times:", response.data.message);
+            setAvailableGroupTimes([]); // Ensure the state is cleared if no data is returned
+        }
     } catch (error) {
-      console.error("Error fetching available group times:", error);
+        console.error("Error fetching available group times:", error);
+        setAvailableGroupTimes([]); // Ensure the state is cleared on error
     }
-  };
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -189,6 +233,33 @@ export default function SubjectDetails() {
       setError(error.response?.data?.error || "An error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleJoinGroupClass = async (groupClassId) => {
+    if (!groupClassId) {
+      alert("Please select a group class to join.");
+      return;
+    }
+
+    setIsJoining(true);
+    try {
+      const response = await axios.post(
+        `http://localhost:4000/api/v1/classes/join-group-class/${groupClassId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      alert("Successfully joined the group class!");
+      fetchGroupClasses(); // Refresh group classes
+    } catch (error) {
+      console.error("Error joining group class:", error.response?.data || error);
+      alert(error.response?.data?.error || "An error occurred. Please try again.");
+    } finally {
+      setIsJoining(false);
     }
   };
 
@@ -294,6 +365,26 @@ export default function SubjectDetails() {
           </div>
         </section>
 
+        <section className="mb-8">
+          <h2 className="section-title">Available Group Classes</h2>
+          {groupClasses.length > 0 ? (
+            <div className="group-classes-list">
+              {groupClasses.map((groupClass) => (
+                <div key={groupClass._id} className="group-class-card">
+                  <h3 className="group-class-title">
+                    {groupClass.title || "Class Title Not Available"}
+                  </h3>
+                  <p><strong>Time:</strong> {new Date(groupClass.time).toLocaleString()}</p>
+                  <p><strong>Duration:</strong> {groupClass.duration} minutes</p>
+                  <p><strong>Participants:</strong> {groupClass.participants.length}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="section-description">No upcoming group classes available for this course.</p>
+          )}
+        </section>
+
         <div className="action-button">
           {isCheckingEnrollment ? (
             <button
@@ -362,11 +453,15 @@ export default function SubjectDetails() {
                     required
                   >
                     <option value="">Select a time</option>
-                    {availableGroupTimes.map((time) => (
-                      <option key={time} value={time}>
-                        {new Date(time).toLocaleString()}
-                      </option>
-                    ))}
+                    {availableGroupTimes.length > 0 ? (
+                      availableGroupTimes.map((time, index) => (
+                        <option key={index} value={time.time}>
+                          {new Date(time.time).toLocaleString()} ({time.duration} minutes)
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No available times</option>
+                    )}
                   </select>
                 </div>
               ) : (

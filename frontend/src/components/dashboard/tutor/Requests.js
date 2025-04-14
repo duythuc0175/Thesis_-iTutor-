@@ -144,91 +144,79 @@ export default function Requests() {
   
   const handleCreateClass = async () => {
     try {
-      // Validate Zoom link
-      if (!classDetails.classLink) {
-        alert("Please enter a Zoom link");
-        return;
-      }
-
-      //const zoomLinkRegex = /^(https?:\/\/)?(zoom\.us\/j\/\d+|meet\.google\.com\/[a-z-]+)$/i;
-      //if (!zoomLinkRegex.test(classDetails.classLink)) {
-      //  alert("Please enter a valid Zoom or Google Meet link");
-      //  return;
-      //}
-  
-      const token = localStorage.getItem("token");
-      const requestId = classDetailsModal.requestId;
-  
-      // Ensure all required information is present
-      if (!requestId) {
-        alert("Request ID is missing. Please try again.");
-        return;
-      }
-  
-      const response = await axios.post(
-        `http://localhost:4000/api/v1/classes/handle-request/${requestId}`,
-        { 
-          status: "Accepted", 
-          classLink: classDetails.classLink 
-        },
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}` 
-          } 
+        // Skip validation for classLink if the class type is "Group"
+        if (classDetailsModal.type === "Personal" && !classDetails.classLink) {
+            alert("Please enter a Zoom link");
+            return;
         }
-      );
-  
-      console.log("Full Response:", response.data);
-  
-      // Specific handling for personal classes (if needed)
-      if (response.data.type === "Personal") {
-        // Additional personal class specific logic can be added here
-        console.log("Personal class created successfully");
-      }
-  
-      // Update local state
-      const updatedRequests = requests.map(req =>
-        req.id === requestId 
-          ? { ...req, status: "Accepted", isNew: false, classLink: classDetails.classLink } 
-          : req
-      );
-  
-      setRequests(updatedRequests);
-      setFilteredRequests(updatedRequests);
-  
-      // Reset modals and details
-      setClassDetailsModal({ 
-        show: false, 
-        type: "", 
-        requestId: null, 
-        courseId: null 
-      });
-      setClassDetails({ 
-        date: "", 
-        time: "", 
-        classLink: "",
-        duration:"" 
-      });
-  
-      // Provide user feedback
-      alert("Class created successfully!");
-  
-      // Optional: Navigate to schedule or perform additional action
-      // navigate("/dashboard/tutor/schedule");
-  
+
+        const token = localStorage.getItem("token");
+        const requestId = classDetailsModal.requestId;
+
+        // Ensure all required information is present
+        if (!requestId) {
+            alert("Request ID is missing. Please try again.");
+            return;
+        }
+
+        const response = await axios.post(
+            `http://localhost:4000/api/v1/classes/handle-request/${requestId}`,
+            {
+                status: "Accepted",
+                classLink: classDetailsModal.type === "Personal" ? classDetails.classLink : undefined, // Only include classLink for personal classes
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        console.log("Full Response:", response.data);
+
+        // Specific handling for personal classes (if needed)
+        if (response.data.type === "Personal") {
+            console.log("Personal class created successfully");
+        }
+
+        // Update local state
+        const updatedRequests = requests.map((req) =>
+            req.id === requestId
+                ? { ...req, status: "Accepted", isNew: false, classLink: classDetails.classLink }
+                : req
+        );
+
+        setRequests(updatedRequests);
+        setFilteredRequests(updatedRequests);
+
+        // Reset modals and details
+        setClassDetailsModal({
+            show: false,
+            type: "",
+            requestId: null,
+            courseId: null,
+        });
+        setClassDetails({
+            date: "",
+            time: "",
+            classLink: "",
+            duration: "",
+        });
+
+        // Provide user feedback
+        alert("Class created successfully!");
     } catch (err) {
-      // More detailed error handling
-      console.error("Detailed Error:", err.response?.data || err.message);
-      
-      // Provide specific error message to user
-      const errorMessage = err.response?.data?.details || 
-                           err.response?.data?.error || 
-                           err.response?.data?.message || 
-                           'Failed to create class';
-      
-      alert(`Error: ${errorMessage}`);
+        console.error("Detailed Error:", err.response?.data || err.message);
+
+        const errorMessage =
+            err.response?.data?.details ||
+            err.response?.data?.error ||
+            err.response?.data?.message ||
+            "Failed to create class";
+
+        alert(`Error: ${errorMessage}`);
     }
-  };
+};
 
   const gotoSchedule = () => {
     navigate("/dashboard/tutor/schedule");
@@ -297,12 +285,14 @@ export default function Requests() {
                       View Request
                     </button>
                     {request.status === "Accepted" && (
-                      <button
-                        onClick={gotoSchedule}
-                        className="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700"
-                      >
-                        Go To Schedule
-                      </button>
+                      <>
+                        <button
+                          onClick={gotoSchedule}
+                          className="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700"
+                        >
+                          Go To Schedule
+                        </button>
+                      </>
                     )}
                     {request.status === "Pending" && (
                       <>
@@ -387,17 +377,19 @@ export default function Requests() {
               />
             </div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700 font-bold mb-2">Class Link</label>
-              <input
-                type="text"
-                placeholder="Enter Zoom/Meet link"
-                value={classDetails.classLink}
-                onChange={(e) => setClassDetails(prev => ({ ...prev, classLink: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
-                required
-              />
-            </div>
+            {classDetailsModal.type === "Personal" && (
+                <div className="mb-4">
+                    <label className="block text-gray-700 font-bold mb-2">Class Link</label>
+                    <input
+                        type="text"
+                        placeholder="Enter Zoom/Meet link"
+                        value={classDetails.classLink}
+                        onChange={(e) => setClassDetails(prev => ({ ...prev, classLink: e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        required
+                    />
+                </div>
+            )}
 
             <div className="mb-4">
               <label className="block text-gray-700 font-bold mb-2">Duration</label>

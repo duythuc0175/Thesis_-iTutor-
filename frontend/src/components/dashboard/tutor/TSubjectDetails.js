@@ -10,6 +10,7 @@ export default function TSubjectDetails() {
   const [course, setCourse] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
   const [formData, setFormData] = useState({
+    title: "", // Add title field
     time: "",
     duration: 60, // Default duration in minutes
     classLink: "",
@@ -33,6 +34,31 @@ export default function TSubjectDetails() {
     fetchCourseAndSections();
   }, [id]);
 
+  const fetchGroupClasses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+
+      const response = await axios.get(`http://localhost:4000/api/v1/classes/group-classes/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.success) {
+        console.log("Fetched group classes:", response.data.groupClasses);
+        // Optionally, update state or perform other actions with the fetched data
+      } else {
+        console.error("Failed to fetch group classes:", response.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching group classes:", error);
+    }
+  };
+
   const handleRedirect = () => {
     localStorage.setItem("selectedCourseId", id); // Store the course ID in localStorage
     navigate("/dashboard/tutor/add-section"); // Navigate to the Add Section page
@@ -48,8 +74,8 @@ export default function TSubjectDetails() {
     setError("");
 
     // Validate input
-    if (!formData.time || !formData.duration) {
-      setError("Class time and duration are required.");
+    if (!formData.title || !formData.time || !formData.duration) {
+      setError("Class title, time, and duration are required.");
       return;
     }
 
@@ -68,6 +94,9 @@ export default function TSubjectDetails() {
       setIsModalOpen(false);
       alert("Group class created successfully!");
       console.log("Group class created:", response.data);
+
+      // Refresh the group classes list
+      fetchGroupClasses();
     } catch (error) {
       console.error("Error creating group class:", error);
       setError(error.response?.data?.error || "An error occurred. Please try again.");
@@ -230,6 +259,20 @@ export default function TSubjectDetails() {
             )}
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
+                <label className="block text-gray-700" htmlFor="title">Class Title</label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  className="border border-gray-300 rounded-lg w-full p-2"
+                  placeholder="Enter class title"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
                 <label className="block text-gray-700" htmlFor="time">Class Time</label>
                 <input
                   type="datetime-local"
@@ -264,6 +307,7 @@ export default function TSubjectDetails() {
                   value={formData.classLink}
                   onChange={handleInputChange}
                   className="border border-gray-300 rounded-lg w-full p-2"
+                  placeholder="Enter Zoom/Meet link (optional)"
                 />
               </div>
 

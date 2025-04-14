@@ -3,7 +3,6 @@ const ClassRequest = require("../models/ClassRequest");
 const Course = require("../models/Course");
 const Notification = require("../models/Notification");
 const cron = require("node-cron");
-const mongoose = require("mongoose"); // Add this import at the top
 
 exports.sendClassRequest = async (req, res) => {
     try {
@@ -38,12 +37,14 @@ exports.sendClassRequest = async (req, res) => {
             return res.status(403).json({ error: "You are not enrolled in this course." });
         }
 
+        // Exclude rejected requests when checking for existing requests
         const existingRequest = await ClassRequest.findOne({
             student: studentId,
             time: { 
                 $gte: startTime.toISOString(), 
                 $lt: endTime.toISOString() 
             },
+            status: { $ne: "Rejected" }, // Exclude rejected requests
         });
 
         if (existingRequest) {
@@ -119,14 +120,37 @@ exports.handleClassRequest = async (req, res) => {
             return res.status(400).json({ error: "Course information is missing" });
         }
 
-        classRequest.status = status;
-        await classRequest.save();
-
         if (status === "Accepted") {
             try {
+                const startTime = new Date(classRequest.time);
+                const endTime = new Date(startTime.getTime() + classRequest.duration * 60 * 1000);
+
+                // Check for time conflicts with both personal and group classes
+                const conflictingClass = await Class.findOne({
+                    tutor: classRequest.tutor._id,
+                    $or: [
+                        {
+                            time: { $lt: endTime },
+                            $expr: { $gte: [{ $add: ["$time", { $multiply: ["$duration", 60000] }] }, startTime] }
+                        },
+                        {
+                            time: { $gte: startTime, $lt: endTime }
+                        }
+                    ]
+                });
+
+                if (conflictingClass) {
+                    console.error("Time conflict detected with another class:", conflictingClass);
+                    return res.status(409).json({
+                        error: "Time conflict detected with another class.",
+                        conflictingClass
+                    });
+                }
+
                 if (classRequest.type === "Personal") {
                     console.log("Creating Personal Class");
                     const newClass = new Class({
+                        title: `Personal Class for ${classRequest.course.courseName}`, // Add default title
                         student: classRequest.student._id,
                         tutor: classRequest.tutor._id,
                         course: classRequest.course._id,
@@ -134,7 +158,7 @@ exports.handleClassRequest = async (req, res) => {
                         time: classRequest.time,
                         duration: classRequest.duration, // Use duration from classRequest
                         classLink: classLink || "", // Allow empty link
-                        status: "Accepted"
+                        status: "Accepted" // Explicitly set status to "Accepted"
                     });
 
                     console.log("New Class Object:", JSON.stringify(newClass, null, 2));
@@ -143,51 +167,60 @@ exports.handleClassRequest = async (req, res) => {
                     console.log("Personal Class Created Successfully");
                 } else if (classRequest.type === "Group") {
                     console.log("Creating/Updating Group Class");
-                    let groupClass = await Class.findOne({ 
-                        course: classRequest.course._id, 
-                        type: "Group" 
+                    let groupClass = await Class.findOne({
+                        course: classRequest.course._id,
+                        type: "Group",
                     });
 
                     if (!groupClass) {
                         groupClass = new Class({
+                            title: `Group Class for ${classRequest.course.courseName}`,
                             participants: [classRequest.student._id],
                             tutor: classRequest.tutor._id,
                             course: classRequest.course._id,
                             type: "Group",
                             time: classRequest.time,
-                            duration: classRequest.duration, // Use duration from classRequest
-                            classLink: classLink || "",
-                            status: "Accepted"
+                            duration: classRequest.duration,
+                            classLink: classLink || "No meeting link provided",
+                            status: "Accepted", // Explicitly set status to "Accepted"
                         });
                     } else {
                         if (!groupClass.participants.includes(classRequest.student._id.toString())) {
                             groupClass.participants.push(classRequest.student._id);
                         }
-                        groupClass.classLink = classLink || groupClass.classLink;
+                        groupClass.status = "Accepted"; // Explicitly set status to "Accepted"
                     }
 
                     await groupClass.save();
                     console.log("Group Class Created/Updated Successfully");
                 }
+
+                // Update the request status to "Accepted" only if no conflict is found
+                classRequest.status = "Accepted";
+                await classRequest.save();
             } catch (classCreationError) {
                 console.error("Error in class creation:", classCreationError);
-                return res.status(500).json({ 
-                    error: "Failed to create class", 
-                    details: classCreationError.message 
+                return res.status(500).json({
+                    error: "Failed to create class",
+                    details: classCreationError.message,
                 });
             }
+        } else {
+            // Update the request status for other actions (e.g., "Rejected")
+            classRequest.status = status;
+            await classRequest.save();
         }
 
-        return res.status(200).json({ 
+        return res.status(200).json({
             message: `Class request ${status.toLowerCase()} successfully.`,
-            type: classRequest.type
+            type: classRequest.type,
         });
 
     } catch (error) {
         console.error("Comprehensive Error in handleClassRequest:", error);
-        return res.status(500).json({ 
-            error: "An error occurred while handling the class request.", 
-            details: error.message 
+        return res.status(500).json({
+            error: "An error occurred while handling the class request.",
+            details: error.message,
         });
     }
 };
@@ -226,39 +259,44 @@ exports.getStudentClassRequests = async (req, res) => {
 
 exports.getAcceptedClasses = async (req, res) => {
     try {
-      const userId = req.user.id;
-      const userRole = req.user.accountType;
-      
-      let query = { status: "Accepted" };
-      
-      if (userRole === "Tutor") {
-        query.tutor = userId;
-      } else {
-        query.$or = [
-          { type: "Personal", student: userId },
-          { type: "Group", participants: userId }
-        ];
-      }
-      
-      console.log(query.tutor);
-      const acceptedClasses = await Class.find(query)
-        .populate('tutor', 'firstName email')
-        .populate('course', 'courseName courseDescription')
-        .populate('student', 'firstName email') 
-        .populate('participants', 'firstName email'); 
-      
-      return res.status(200).json({
-        message: "Accepted classes retrieved successfully.",
-        acceptedClasses,
-      });
+        const userId = req.user.id;
+        const userRole = req.user.accountType;
+
+        let query = { status: "Accepted" };
+
+        if (userRole === "Tutor") {
+            // ✅ Tutors see all classes they created
+            query.$or = [
+                { tutor: userId, type: "Personal" },
+                { tutor: userId, type: "Group" }
+            ];
+        } else {
+            // ✅ Students see personal classes they requested AND group classes they participate in
+            query.$or = [
+                { type: "Personal", student: userId },
+                { type: "Group", participants: userId }
+            ];
+        }
+
+        const acceptedClasses = await Class.find(query)
+            .populate('tutor', 'firstName email')
+            .populate('course', 'courseName courseDescription')
+            .populate('student', 'firstName email') // For personal classes
+            .populate('participants', 'firstName email'); // For group classes
+
+        return res.status(200).json({
+            message: "Accepted classes retrieved successfully.",
+            acceptedClasses,
+        });
     } catch (error) {
-      console.error("Error fetching accepted classes:", error);
-      return res.status(500).json({
-        error: "An error occurred while fetching accepted classes.",
-        details: error.message
-      });
+        console.error("Error fetching accepted classes:", error);
+        return res.status(500).json({
+            error: "An error occurred while fetching accepted classes.",
+            details: error.message
+        });
     }
-  };
+};
+
 
 // Function to delete a class after its duration
 const scheduleClassDeletion = (classId, duration) => {
@@ -276,87 +314,99 @@ const scheduleClassDeletion = (classId, duration) => {
 // Example usage in createGroupClass
 exports.createGroupClass = async (req, res) => {
     try {
-        const { courseId } = req.params;
-        const { time, duration, classLink } = req.body;
-
-        // Validate course ID
-        if (!mongoose.Types.ObjectId.isValid(courseId)) {
-            return res.status(400).json({ success: false, message: "Invalid course ID." });
-        }
-
-        // Check if the course exists
-        const course = await Course.findById(courseId);
-        if (!course) {
-            return res.status(404).json({ success: false, message: "Course not found." });
-        }
-
-        // Check for overlapping classes
-        const startTime = new Date(time);
-        const endTime = new Date(startTime.getTime() + duration * 60000);
-        const overlappingClass = await Class.findOne({
-            course: courseId,
-            type: "Group",
-            time: { $lt: endTime },
-            $expr: { $gt: ["$time", startTime] },
-        });
-
-        if (overlappingClass) {
-            return res.status(400).json({ success: false, message: "Overlapping class exists." });
-        }
-
-        // Create the group class
-        const newClass = await Class.create({
-            course: courseId,
-            tutor: req.user._id,
-            type: "Group",
-            time: startTime,
-            duration,
-            classLink,
-        });
-
-        return res.status(201).json({
-            success: true,
-            message: "Group class created successfully.",
-            data: newClass,
-        });
-    } catch (error) {
-        console.error("Error creating group class:", error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Error occurred while creating the group class.",
-            error: error.message,
-        });
-    }
-};
-
-exports.getGroupClasses = async (req, res) => {
-    try {
+        const { title, time, classLink, duration } = req.body;
         const courseId = req.params.courseId;
         const tutorId = req.user.id;
 
-        // Check if the course exists and the user is the tutor
-        const course = await Course.findById(courseId);
+        // Validate input
+        if (!title || !time || !duration) {
+            return res.status(400).json({ error: "Class title, time, and duration are required." });
+        }
+
+        const classTime = new Date(time);
+        if (isNaN(classTime.getTime())) {
+            return res.status(400).json({ error: "Invalid time format." });
+        }
+
+        const currentTime = new Date();
+        if (classTime < currentTime) {
+            return res.status(400).json({ error: "Cannot create a class in the past." });
+        }
+
+        // Fetch the course and validate
+        const course = await Course.findById(courseId).populate("studentsEnrolled", "_id");
         if (!course) {
             return res.status(404).json({ error: "Course not found." });
         }
 
         if (!course.tutor.equals(tutorId)) {
-            return res.status(403).json({ error: "You are not authorized to view group classes for this course." });
+            return res.status(403).json({ error: "You are not authorized to create a group class for this course." });
         }
 
-        // Fetch all group classes for the course
-        const groupClasses = await Class.find({ 
-            course: courseId, 
-            type: "Group" 
-        }).populate("participants", "name email"); // Populate participants if needed
+        if (!course.studentsEnrolled || course.studentsEnrolled.length === 0) {
+            return res.status(400).json({ error: "No students are enrolled in this course." });
+        }
+
+        // Create group class
+        const groupClass = new Class({
+            title,
+            tutor: tutorId,
+            course: courseId,
+            type: "Group",
+            time: classTime,
+            duration,
+            classLink: classLink || "No meeting link provided", // Default value if no link is provided
+            participants: course.studentsEnrolled.map((student) => student._id),
+            status: "Accepted", // Ensure the status is set to "Accepted"
+        });
+
+        await groupClass.save();
+
+        return res.status(201).json({
+            message: "Group class created successfully.",
+            groupClass,
+        });
+    } catch (error) {
+        console.error("Error in createGroupClass:", error);
+        return res.status(500).json({ error: "An error occurred. Please try again later." });
+    }
+};
+
+exports.getGroupClasses = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+
+        // Fetch all upcoming group classes for the course
+        const currentTime = new Date();
+        console.log("Fetching group classes for course:", courseId, "at time:", currentTime);
+
+        const groupClasses = await Class.find({
+            course: courseId,
+            type: "Group",
+            time: { $gte: currentTime }, // Only fetch classes with a future time
+        })
+        .populate("course", "courseName") // Populate the course field with courseName
+        .populate("participants", "firstName email"); // Populate participants if needed
+
+        console.log("Fetched group classes:", groupClasses);
+
+        if (!groupClasses || groupClasses.length === 0) {
+            return res.status(200).json({
+                success: true,
+                groupClasses: [], // Return an empty array if no group classes are found
+            });
+        }
 
         return res.status(200).json({
-            message: "Group classes retrieved successfully.",
+            success: true,
             groupClasses,
         });
     } catch (error) {
         console.error("Error fetching group classes:", error);
-        return res.status(500).json({ error: "An error occurred. Please try again later." });
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while fetching group classes.",
+        });
     }
 };
 
@@ -388,49 +438,74 @@ exports.deleteClassById = async (req, res) => {
     }
 };
 
+exports.requestToJoinGroupClass = async (req, res) => {
+    try {
+        const { classId } = req.params;
+        const studentId = req.user.id;
+
+        // Find the group class
+        const groupClass = await Class.findById(classId);
+        if (!groupClass || groupClass.type !== "Group") {
+            return res.status(404).json({ error: "Group class not found." });
+        }
+
+        // Check if the student is already a participant
+        if (groupClass.participants.includes(studentId)) {
+            return res.status(400).json({ error: "You are already a participant in this group class." });
+        }
+
+        // Check if the student is enrolled in the course
+        const course = await Course.findById(groupClass.course);
+        if (!course || !course.studentsEnrolled.includes(studentId)) {
+            return res.status(403).json({ error: "You must be enrolled in the course to join this group class." });
+        }
+
+        // Add the student to the participants list
+        groupClass.participants.push(studentId);
+        await groupClass.save();
+
+        return res.status(200).json({
+            message: "Successfully joined the group class.",
+            groupClass,
+        });
+    } catch (error) {
+        console.error("Error in requestToJoinGroupClass:", error);
+        return res.status(500).json({ error: "An error occurred. Please try again later." });
+    }
+};
+
 exports.getAvailableGroupTimes = async (req, res) => {
     try {
         const { courseId } = req.params;
 
-        // Validate the course ID
-        if (!mongoose.Types.ObjectId.isValid(courseId)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid course ID format.",
-            });
-        }
-
-        // Fetch group classes for the course
+        // Find all group classes for the course
         const groupClasses = await Class.find({
             course: courseId,
             type: "Group",
-            status: "Accepted",
         }).select("time duration");
 
         if (!groupClasses || groupClasses.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No available group classes found for this course.",
+            return res.status(200).json({
+                success: true,
+                data: [], // Return an empty array if no group classes are available
             });
         }
 
-        // Format the response to include start and end times
+        // Map the group classes to return only the start times
         const availableTimes = groupClasses.map((groupClass) => ({
-            startTime: groupClass.time,
-            endTime: new Date(groupClass.time.getTime() + groupClass.duration * 60000),
+            time: groupClass.time,
+            duration: groupClass.duration,
         }));
 
         return res.status(200).json({
             success: true,
-            message: "Available group class times fetched successfully.",
             data: availableTimes,
         });
     } catch (error) {
-        console.error("Error fetching available group times:", error.message);
+        console.error("Error fetching available group times:", error);
         return res.status(500).json({
             success: false,
-            message: "Error occurred while fetching available group times.",
-            error: error.message,
+            message: "An error occurred while fetching available group times.",
         });
     }
 };

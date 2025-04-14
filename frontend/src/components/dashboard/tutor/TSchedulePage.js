@@ -31,7 +31,6 @@ export default function TSchedulePage() {
             return;
         }
 
-        // Fetch both personal and group classes
         const response = await fetch("http://localhost:4000/api/v1/classes/accepted-classes", {
             method: "GET",
             headers: {
@@ -40,48 +39,37 @@ export default function TSchedulePage() {
             },
         });
 
-        if (response.status === 401) {
-            console.error("Authentication token expired or invalid");
-            return;
-        }
-
-        const data = await response.json();
-
         if (response.ok) {
-            console.log("Raw API response:", data);
+            const data = await response.json();
 
-            // Combine personal and group classes into events
-            const classItems = data.acceptedClasses || [];
-            const transformedEvents = classItems.map(classItem => {
+            const transformedEvents = data.acceptedClasses.map((classItem) => {
                 const startTime = new Date(classItem.time);
-                const validStartTime = isNaN(startTime.getTime()) ? new Date() : startTime;
-                const endTime = new Date(validStartTime.getTime() + (classItem.duration || 60) * 60000);
+                const endTime = new Date(startTime.getTime() + (classItem.duration || 60) * 60000);
 
                 return {
                     id: classItem._id,
-                    title: classItem.course?.courseName || "Untitled Class",
-                    start: validStartTime,
+                    title: classItem.type === "Group"
+                        ? `[GROUP] ${classItem.title || "Group Class"}`
+                        : classItem.title || "Untitled Class",
+                    start: startTime,
                     end: endTime,
                     description: classItem.course?.courseDescription || "No description provided",
                     meetLink: classItem.classLink || "",
-                    studentName: classItem.type === "Personal" 
-                        ? classItem.student?.firstName || classItem.student?.email || "Unknown Student"
-                        : "Group Class",
-                    type: classItem.type // Personal or Group
+                    participants: classItem.participants?.length || 0,
+                    type: classItem.type,
                 };
             });
 
-            console.log("Transformed events:", transformedEvents);
             setEvents(transformedEvents);
         } else {
-            console.error("Failed to fetch accepted classes:", data.error);
+            console.error("Failed to fetch accepted classes");
         }
     } catch (error) {
         console.error("Error fetching accepted classes:", error);
     } finally {
         setFetchingClasses(false);
     }
-  };
+};
 
   const addEvent = async () => {
     if (!newEvent.title || !newEvent.start || !newEvent.end || !newEvent.description) {

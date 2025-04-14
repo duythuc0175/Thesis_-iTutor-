@@ -15,60 +15,54 @@ export default function SchedulePage() {
   const fetchAcceptedClasses = async () => {
     setFetchingClasses(true);
     try {
-      const token = localStorage.getItem("token");
-  
-      if (!token) {
-        console.error("No authentication token found");
-        return;
-      }
-  
-      const response = await fetch("http://localhost:4000/api/v1/classes/accepted-classes", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-  
-      if (response.status === 401) {
-        console.error("Authentication token expired or invalid");
-        return;
-      }
-  
-      const data = await response.json();
-  
-      if (response.ok) {
-        // Log the raw data to see its structure
-        console.log("Raw API response:", data);
-        
-        const transformedEvents = data.acceptedClasses.map(classItem => {
-          const startTime = new Date(classItem.time);
-          const validStartTime = isNaN(startTime.getTime()) ? new Date() : startTime;
-          const endTime = new Date(validStartTime.getTime() + (classItem.duration || 60) * 60000);
-          
-          return {
-            id: classItem._id,
-            title: classItem.course?.courseName || "Untitled Class",
-            start: validStartTime,
-            end: endTime,
-            description: classItem.course?.courseDescription || "No description provided",
-            meetLink: classItem.classLink || "",
-            tutorName: classItem.tutor?.firstName || classItem.tutor?.email || "Unknown Tutor"
-          };
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            console.error("No authentication token found");
+            return;
+        }
+
+        const response = await fetch("http://localhost:4000/api/v1/classes/accepted-classes", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
         });
-  
-        console.log("Transformed events:", transformedEvents);
-        setEvents(transformedEvents);
-      } else {
-        console.error("Failed to fetch classes:", data.error);
-      }
+
+        if (response.ok) {
+            const data = await response.json();
+
+            const transformedEvents = data.acceptedClasses.map((classItem) => {
+                const startTime = new Date(classItem.time);
+                const endTime = new Date(startTime.getTime() + (classItem.duration || 60) * 60000);
+
+                return {
+                    id: classItem._id,
+                    title: classItem.type === "Group"
+                        ? `[GROUP] ${classItem.title || "Group Class"}`
+                        : classItem.title || "Untitled Class",
+                    start: startTime,
+                    end: endTime,
+                    description: classItem.course?.courseDescription || "No description provided",
+                    meetLink: classItem.classLink || "",
+                    tutorName: classItem.tutor?.firstName || classItem.tutor?.email || "Unknown Tutor",
+                    participants: classItem.participants?.length || 0,
+                    type: classItem.type,
+                };
+            });
+
+            setEvents(transformedEvents);
+        } else {
+            console.error("Failed to fetch classes");
+        }
     } catch (error) {
-      console.error("Error fetching accepted classes:", error);
+        console.error("Error fetching accepted classes:", error);
     } finally {
-      setFetchingClasses(false);
+        setFetchingClasses(false);
     }
-  };
-  
+};
+
   const deleteEvent = (eventId) => {
     setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
   };

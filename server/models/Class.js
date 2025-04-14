@@ -29,6 +29,10 @@ const classSchema = new mongoose.Schema({
         enum: ["Personal", "Group"],  // Class can be Personal or Group
         required: true,
     },
+    title: {
+        type: String, // Add a title field for the class
+        required: true,
+    },
     time: {
         type: Date,  // Class time
         required: true,
