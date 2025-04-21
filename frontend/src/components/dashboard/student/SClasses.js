@@ -16,7 +16,7 @@ const formatTimeRange = (startTime, duration) => {
     return `${start.toLocaleTimeString("en-US", options)} - ${end.toLocaleTimeString("en-US", options)}`;
 };
 
-export default function TClasses() {
+export default function SClasses() {
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -25,12 +25,12 @@ export default function TClasses() {
         const fetchClasses = async () => {
             try {
                 const token = localStorage.getItem("token");
-                const response = await axios.get("http://localhost:4000/api/v1/classes/tutor-classes", {
+                const response = await axios.get("http://localhost:4000/api/v1/classes/accepted-classes", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-                setClasses(response.data.classes || []);
+                setClasses(response.data.acceptedClasses || []);
             } catch (err) {
                 console.error("Error fetching classes:", err);
                 setError("Failed to fetch classes. Please try again.");
@@ -52,7 +52,7 @@ export default function TClasses() {
 
             {/* Main Content */}
             <div className="flex-1 ml-64 p-8 overflow-y-auto">
-                <h1 className="text-3xl font-bold text-gray-800 mb-4 pt-14">Classes</h1>
+                <h1 className="text-3xl font-bold text-gray-800 mb-4 pt-14">My Classes</h1>
 
                 {loading ? (
                     <p>Loading classes...</p>
@@ -70,7 +70,7 @@ export default function TClasses() {
                                 type={classItem.type}
                                 time={formatTimeRange(classItem.time, classItem.duration)}
                                 description={classItem.course?.courseDescription || "No description provided"}
-                                studentName={classItem.student?.firstName || "N/A"}
+                                tutorName={classItem.tutor?.firstName || "Unknown Tutor"}
                                 participants={classItem.participants || []}
                                 meetLink={classItem.classLink}
                                 duration={classItem.duration}

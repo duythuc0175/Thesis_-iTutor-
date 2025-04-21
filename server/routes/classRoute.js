@@ -30,6 +30,9 @@ router.post("/join-group-class/:classId", auth, isStudent, classController.reque
 // Route to get available group times for a course
 router.get("/available-group-times/:courseId", auth, isStudent, classController.getAvailableGroupTimes);
 
+// Route to fetch all classes for the tutor
+router.get("/tutor-classes", auth, isTutor, classController.getTutorClasses);
+
 // Route to delete a class by ID (Tutor only)
 router.delete("/:classId", auth, isTutor, classController.deleteClassById);
 

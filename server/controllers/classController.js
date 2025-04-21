@@ -509,3 +509,25 @@ exports.getAvailableGroupTimes = async (req, res) => {
         });
     }
 };
+
+exports.getTutorClasses = async (req, res) => {
+    try {
+        const tutorId = req.user.id;
+
+        // Fetch all classes where the logged-in user is the tutor
+        const classes = await Class.find({ tutor: tutorId })
+            .populate("course", "courseName") // Populate course details
+            .populate("participants", "_id"); // Populate participants
+
+        return res.status(200).json({
+            success: true,
+            classes,
+        });
+    } catch (error) {
+        console.error("Error fetching classes for tutor:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch classes for the tutor.",
+        });
+    }
+};

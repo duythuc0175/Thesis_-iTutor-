@@ -7,68 +7,78 @@ export default function SchedulePage() {
   const [viewMode, setViewMode] = useState('month');
   const [fetchingClasses, setFetchingClasses] = useState(true);
 
-  // Fetch accepted classes on component mount
   useEffect(() => {
-    fetchAcceptedClasses();
+    fetchClasses();
   }, []);
 
-  const fetchAcceptedClasses = async () => {
+  const fetchClasses = async () => {
     setFetchingClasses(true);
     try {
-        const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
 
-        if (!token) {
-            console.error("No authentication token found");
-            return;
-        }
+      const response = await fetch("http://localhost:4000/api/v1/classes/accepted-classes", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        const response = await fetch("http://localhost:4000/api/v1/classes/accepted-classes", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
+      if (response.ok) {
+        const data = await response.json();
+        const transformedEvents = data.acceptedClasses.map((classItem) => {
+          const startTime = new Date(classItem.time);
+          const endTime = new Date(startTime.getTime() + (classItem.duration || 60) * 60000);
+
+          return {
+            id: classItem._id,
+            title: classItem.type === "Group"
+              ? `[GROUP] ${classItem.title || "Group Class"}`
+              : classItem.title || "Untitled Class",
+            start: startTime,
+            end: endTime,
+            description: classItem.course?.courseDescription || "No description provided",
+            meetLink: classItem.classLink || "",
+            tutorName: classItem.tutor?.firstName || classItem.tutor?.email || "Unknown Tutor",
+            participants: classItem.participants?.length || 0,
+            type: classItem.type,
+          };
         });
 
-        if (response.ok) {
-            const data = await response.json();
-
-            const transformedEvents = data.acceptedClasses.map((classItem) => {
-                const startTime = new Date(classItem.time);
-                const endTime = new Date(startTime.getTime() + (classItem.duration || 60) * 60000);
-
-                return {
-                    id: classItem._id,
-                    title: classItem.type === "Group"
-                        ? `[GROUP] ${classItem.title || "Group Class"}`
-                        : classItem.title || "Untitled Class",
-                    start: startTime,
-                    end: endTime,
-                    description: classItem.course?.courseDescription || "No description provided",
-                    meetLink: classItem.classLink || "",
-                    tutorName: classItem.tutor?.firstName || classItem.tutor?.email || "Unknown Tutor",
-                    participants: classItem.participants?.length || 0,
-                    type: classItem.type,
-                };
-            });
-
-            setEvents(transformedEvents);
-        } else {
-            console.error("Failed to fetch classes");
-        }
+        setEvents(transformedEvents);
+      } else {
+        console.error("Failed to fetch classes");
+      }
     } catch (error) {
-        console.error("Error fetching accepted classes:", error);
+      console.error("Error fetching classes:", error);
     } finally {
-        setFetchingClasses(false);
+      setFetchingClasses(false);
     }
-};
-
-  const deleteEvent = (eventId) => {
-    setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
   };
 
   const goToToday = () => {
     setSelectedDate(new Date());
+  };
+
+  const changeDate = (direction) => {
+    const newDate = new Date(selectedDate);
+    if (viewMode === 'month') {
+      newDate.setMonth(newDate.getMonth() + direction);
+    } else if (viewMode === 'week') {
+      newDate.setDate(newDate.getDate() + direction * 7);
+    }
+    setSelectedDate(newDate);
+  };
+
+  const isToday = (date) => {
+    const today = new Date();
+    return today.getDate() === date.getDate() &&
+      today.getMonth() === date.getMonth() &&
+      today.getFullYear() === date.getFullYear();
   };
 
   const generateCalendarView = () => {
@@ -76,10 +86,7 @@ export default function SchedulePage() {
     const month = selectedDate.getMonth();
     const day = selectedDate.getDate();
 
-    // Removed the week-only filter to properly display month view
-    // Now we'll filter within each view generator function
-
-    switch(viewMode) {
+    switch (viewMode) {
       case 'month':
         return generateMonthView(year, month, events);
       case 'week':
@@ -100,15 +107,14 @@ export default function SchedulePage() {
 
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(year, month, day);
-      
-      // Filter events for this specific day
+
       const dayEvents = allEvents.filter(event => {
         const eventDate = new Date(event.start);
-        return eventDate.getFullYear() === year && 
-               eventDate.getMonth() === month && 
-               eventDate.getDate() === day;
+        return eventDate.getFullYear() === year &&
+          eventDate.getMonth() === month &&
+          eventDate.getDate() === day;
       });
-      
+
       days.push({ date: currentDate, events: dayEvents });
     }
 
@@ -123,35 +129,17 @@ export default function SchedulePage() {
       const currentDate = new Date(weekStart);
       currentDate.setDate(weekStart.getDate() + i);
 
-      // Filter events for this specific day
       const dayEvents = allEvents.filter(event => {
         const eventDate = new Date(event.start);
-        return eventDate.getFullYear() === currentDate.getFullYear() && 
-               eventDate.getMonth() === currentDate.getMonth() && 
-               eventDate.getDate() === currentDate.getDate();
+        return eventDate.getFullYear() === currentDate.getFullYear() &&
+          eventDate.getMonth() === currentDate.getMonth() &&
+          eventDate.getDate() === currentDate.getDate();
       });
 
       days.push({ date: currentDate, events: dayEvents });
     }
 
     return days;
-  };
-
-  const changeDate = (direction) => {
-    const newDate = new Date(selectedDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(newDate.getMonth() + direction);
-    } else if (viewMode === 'week') {
-      newDate.setDate(newDate.getDate() + direction * 7);
-    }
-    setSelectedDate(newDate);
-  };
-
-  const isToday = (date) => {
-    const today = new Date();
-    return today.getDate() === date.getDate() &&
-           today.getMonth() === date.getMonth() &&
-           today.getFullYear() === date.getFullYear();
   };
 
   const renderView = () => {
@@ -173,115 +161,63 @@ export default function SchedulePage() {
 
     const calendarData = generateCalendarView();
 
-    switch(viewMode) {
-      case 'month':
-        return (
-          <div className="grid-calendar">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="day-header">{day}</div>
-            ))}
-            {calendarData.map((day, index) => (
-              <div 
-                key={index} 
-                className={`calendar-cell ${day ? 'cell-active' : 'cell-inactive'} ${day && isToday(day.date) ? 'cell-today' : ''}`}
-              >
-                {day && (
-                  <>
-                    <div className="date-number">{day.date.getDate()}</div>
-                    {day.events.length > 0 ? (
-                      day.events.map(event => (
-                        <div 
-                          key={event.id} 
-                          className="event-item"
-                        >
-                          <div className="event-title">{event.title}</div>
-                          <div className="event-details">
-                            {event.tutorName && (
-                              <div className="tutor-name">Tutor: {event.tutorName}</div>
-                            )}
-                            {event.meetLink && (
-                              <a 
-                                href={event.meetLink} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="meet-link"
-                              >
-                                Join Meeting
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    ) : null}
-                  </>
-                )}
-              </div>
-            ))}
+    return (
+      <div className="grid grid-cols-7 gap-2 text-center">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="font-bold text-gray-600">{day}</div>
+        ))}
+        {calendarData.map((day, index) => (
+          <div
+            key={index}
+            className={`border p-2 min-h-[100px] ${day ? 'bg-white' : 'bg-gray-100'} ${day && isToday(day.date) ? 'bg-yellow-300' : ''}`}
+          >
+            {day && (
+              <>
+                <div className="date-number">{day.date.getDate()}</div>
+                {day.events.length > 0 ? (
+                  day.events.map(event => (
+                    <div
+                      key={event.id}
+                      className={`event-item ${event.type === 'Group' ? 'group-class' : 'personal-class'}`}
+                    >
+                      <div className="event-title">{event.title}</div>
+                      <div className="event-time">
+                        {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                        {new Date(event.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div className="event-details">
+                        {event.tutorName && (
+                          <div className="tutor-name">Tutor: {event.tutorName}</div>
+                        )}
+                        {event.meetLink && (
+                          <a
+                            href={event.meetLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="meet-link"
+                          >
+                            Join Meeting
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : null}
+              </>
+            )}
           </div>
-        );
-      case 'week':
-        return (
-          <div className="grid-calendar">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="day-header">{day}</div>
-            ))}
-            {calendarData.map((day, index) => (
-              <div 
-                key={index} 
-                className={`calendar-cell week-cell ${day ? 'cell-active' : 'cell-inactive'} ${day && isToday(day.date) ? 'cell-today' : ''}`}
-              >
-                {day && (
-                  <>
-                    <div className="date-number">{day.date.getDate()}</div>
-                    {day.events.length > 0 ? (
-                      day.events.map(event => (
-                        <div 
-                          key={event.id} 
-                          className="event-item"
-                        >
-                          <div className="event-title">{event.title}</div>
-                          <div className="event-time">
-                            {new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
-                            {new Date(event.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          </div>
-                          <div className="event-details">
-                            {event.tutorName && (
-                              <div className="tutor-name">Tutor: {event.tutorName}</div>
-                            )}
-                            {event.meetLink && (
-                              <a 
-                                href={event.meetLink} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="meet-link"
-                              >
-                                Join Meeting
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    ) : null}
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        );
-      default:
-        return null;
-    }
+        ))}
+      </div>
+    );
   };
 
   return (
     <div className="schedule-container">
       <div className="schedule-content">
         <div className="header-container">
-          <h1 className="main-title">
-            Class Schedule
-          </h1>
-          <button 
-            onClick={fetchAcceptedClasses} 
+          <h1 className="main-title">Class Schedule</h1>
+          <button
+            onClick={fetchClasses}
             className="refresh-btn"
           >
             ↻ Refresh
@@ -290,13 +226,13 @@ export default function SchedulePage() {
 
         <div className="controls-container">
           <div className="view-toggle">
-            <button 
+            <button
               onClick={() => setViewMode('month')}
               className={`toggle-btn ${viewMode === 'month' ? 'active-toggle' : ''}`}
             >
               Month
             </button>
-            <button 
+            <button
               onClick={() => setViewMode('week')}
               className={`toggle-btn ${viewMode === 'week' ? 'active-toggle' : ''}`}
             >
@@ -305,13 +241,13 @@ export default function SchedulePage() {
           </div>
 
           <div className="navigation-controls">
-            <button 
+            <button
               onClick={goToToday}
               className="today-btn"
             >
               Today
             </button>
-            <button 
+            <button
               onClick={() => changeDate(-1)}
               className="nav-btn"
             >
@@ -320,7 +256,7 @@ export default function SchedulePage() {
             <h2 className="date-title">
               {viewMode === 'month' ? selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' }) : selectedDate.toDateString()}
             </h2>
-            <button 
+            <button
               onClick={() => changeDate(1)}
               className="nav-btn"
             >
@@ -330,7 +266,6 @@ export default function SchedulePage() {
         </div>
 
         {renderView()}
-
       </div>
     </div>
   );

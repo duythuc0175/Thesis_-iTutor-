@@ -14,7 +14,9 @@ export default function TSchedule(){
         </div>
         <div className="flex-1 ml-64 p-8 overflow-y-auto">
           <h1 className="text-3xl font-bold text-gray-800 mb-4">Schedule</h1>
-          <TSchedulePage/>
+          <div className="calendar-container bg-white shadow-md rounded-lg p-6">
+            <TSchedulePage/>
+          </div>
         </div>
         <Footer/>
       </div>

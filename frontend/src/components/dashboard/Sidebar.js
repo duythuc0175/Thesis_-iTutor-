@@ -43,8 +43,16 @@ const Sidebar = () => {
             />
           );
         })}
-      </div>
 
+        {/* Add Classes Icon for Students */}
+        {normalizedAccountType === "student" && (
+          <SidebarLinks
+            setClicked={setClicked}
+            iconName="VscBook" // Icon for Classes
+            link={{ id: "student-classes", path: "/dashboard/student/classes", name: "Classes" }}
+          />
+        )}
+      </div>
     </div>
   );
 };
