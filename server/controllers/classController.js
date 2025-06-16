@@ -688,3 +688,28 @@ exports.deleteAssignment = async (req, res) => {
         return res.status(500).json({ success: false, message: "Failed to delete assignment.", error: error.message });
     }
 };
+
+// Update assignment deadline (Tutor only)
+exports.updateAssignmentDeadline = async (req, res) => {
+    try {
+        const { classId, assignmentIdx } = req.params;
+        const { deadline } = req.body;
+        if (!deadline) {
+            return res.status(400).json({ success: false, message: "Deadline is required." });
+        }
+        const classDoc = await Class.findById(classId);
+        if (!classDoc) {
+            return res.status(404).json({ success: false, message: "Class not found." });
+        }
+        const idx = parseInt(assignmentIdx, 10);
+        if (!Array.isArray(classDoc.assignment) || !classDoc.assignment[idx]) {
+            return res.status(404).json({ success: false, message: "Assignment not found." });
+        }
+        // Add or update the deadline field for the assignment
+        classDoc.assignment[idx].deadline = new Date(deadline);
+        await classDoc.save();
+        return res.status(200).json({ success: true, message: "Deadline updated successfully.", assignments: classDoc.assignment });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Failed to update deadline.", error: error.message });
+    }
+};

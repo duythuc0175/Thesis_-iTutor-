@@ -59,6 +59,7 @@ const classSchema = new mongoose.Schema({
         {
             fileUrl: { type: String, required: true },
             uploadedAt: { type: Date, default: Date.now },
+            deadline: { type: Date }, // <-- Add this line
             solutions: [
                 {
                     student: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

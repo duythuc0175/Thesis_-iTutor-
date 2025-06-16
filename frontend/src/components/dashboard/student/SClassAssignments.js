@@ -126,11 +126,12 @@ const SClassAssignments = () => {
       <Header />
       <div className="flex-1 flex flex-col items-center justify-start pt-4 sm:pt-10 md:pt-20">
         <div className="w-full max-w-2xl bg-white shadow-lg rounded-lg p-4 sm:p-6 md:p-8 mx-2 sm:mx-4">
+          {/* Back to Classes Button */}
           <button
-            className="mb-4 sm:mb-6 text-blue-600 underline hover:text-blue-800 transition"
-            onClick={() => navigate(-1)}
+            className="mb-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded transition self-start"
+            onClick={() => navigate("/dashboard/student/classes")}
           >
-            &larr; Back to Classes
+            ← Back to Classes
           </button>
           <h2 className="text-3xl font-bold mb-6 text-gray-800">
             Class Assignments
@@ -189,22 +190,46 @@ const SClassAssignments = () => {
                             {new Date(a.uploadedAt).toLocaleString()}
                           </span>
                         </div>
-                        {a.deadline && (
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          {a.deadline && (
                             <span className="text-xs font-semibold text-red-600">
                               Deadline: {new Date(a.deadline).toLocaleString()}
                             </span>
+                          )}
+                          {a.deadline && (
                             <span
                               className={`text-xs font-semibold ${
-                                deadlineNotification.includes("passed")
-                                  ? "text-red-600"
-                                  : "text-yellow-600"
+                                (() => {
+                                  const now = new Date();
+                                  const deadlineDate = new Date(a.deadline);
+                                  if (now > deadlineDate) return "text-red-600";
+                                  const diffMs = deadlineDate - now;
+                                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                  const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+                                  const diffMinutes = Math.floor((diffMs / (1000 * 60)) % 60);
+                                  if (diffDays > 0) return "text-yellow-600";
+                                  if (diffHours > 0) return "text-yellow-600";
+                                  if (diffMinutes > 0) return "text-yellow-600";
+                                  return "text-yellow-600";
+                                })()
                               }`}
                             >
-                              {deadlineNotification}
+                              {(() => {
+                                const now = new Date();
+                                const deadlineDate = new Date(a.deadline);
+                                if (now > deadlineDate) return "Deadline has passed";
+                                const diffMs = deadlineDate - now;
+                                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+                                const diffMinutes = Math.floor((diffMs / (1000 * 60)) % 60);
+                                if (diffDays > 0) return `Deadline in ${diffDays} day${diffDays > 1 ? "s" : ""}`;
+                                if (diffHours > 0) return `Deadline in ${diffHours} hour${diffHours > 1 ? "s" : ""}`;
+                                if (diffMinutes > 0) return `Deadline in ${diffMinutes} minute${diffMinutes > 1 ? "s" : ""}`;
+                                return "Deadline is very soon!";
+                              })()}
                             </span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                         <a
                           href={a.fileUrl}
                           target="_blank"
@@ -222,32 +247,38 @@ const SClassAssignments = () => {
                             View All Submissions
                           </button>
                           {/* Only show submit button if deadline not passed */}
-                          <label className="sr-only" htmlFor={`file-upload-${idx}`}>
-                            Upload solution
-                          </label>
-                          <input
-                            id={`file-upload-${idx}`}
-                            type="file"
-                            accept="application/pdf"
-                            ref={(el) => (fileInputRefs.current[idx] = el)}
-                            onChange={(e) => handleFileChange(e, idx)}
-                            className="hidden"
-                          />
-                          <button
-                            className={`px-2 py-1 bg-green-600 text-white rounded text-xs font-semibold hover:bg-green-700 transition`}
-                            onClick={() => fileInputRefs.current[idx]?.click()}
-                          >
-                            Choose PDF
-                          </button>
-                          <button
-                            className={`px-2 py-1 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 transition`}
-                            disabled={submitLoading && submitIdx === idx}
-                            onClick={() => handleSubmitSolution(a, idx)}
-                          >
-                            {submitLoading && submitIdx === idx
-                              ? "Submitting..."
-                              : "Submit"}
-                          </button>
+                          {(!a.deadline || new Date(a.deadline) > new Date()) ? (
+                            <>
+                              <label className="sr-only" htmlFor={`file-upload-${idx}`}>
+                                Upload solution
+                              </label>
+                              <input
+                                id={`file-upload-${idx}`}
+                                type="file"
+                                accept="application/pdf"
+                                ref={(el) => (fileInputRefs.current[idx] = el)}
+                                onChange={(e) => handleFileChange(e, idx)}
+                                className="hidden"
+                              />
+                              <button
+                                className={`px-2 py-1 bg-green-600 text-white rounded text-xs font-semibold hover:bg-green-700 transition`}
+                                onClick={() => fileInputRefs.current[idx]?.click()}
+                              >
+                                Choose PDF
+                              </button>
+                              <button
+                                className={`px-2 py-1 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 transition`}
+                                disabled={submitLoading && submitIdx === idx}
+                                onClick={() => handleSubmitSolution(a, idx)}
+                              >
+                                {submitLoading && submitIdx === idx
+                                  ? "Submitting..."
+                                  : "Submit"}
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-red-600 font-semibold ml-2">Submission closed (deadline passed)</span>
+                          )}
                         </div>
                         {/* Show selected file name */}
                         {submitIdx === idx && selectedFile && (
@@ -378,7 +409,7 @@ const SClassAssignments = () => {
 
 
 export default SClassAssignments;
-  
+
 
 
 

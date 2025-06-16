@@ -65,4 +65,12 @@ router.delete(
   classController.deleteAssignment
 );
 
+// Add this route for updating assignment deadline (Tutor only)
+router.put(
+  "/:classId/assignment/:assignmentIdx/deadline",
+  auth,
+  isTutor,
+  classController.updateAssignmentDeadline
+);
+
 module.exports = router;

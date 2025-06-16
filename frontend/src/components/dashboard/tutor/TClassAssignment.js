@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Header from "../Header";
 import Footer from "../Footer";
 import "./../../css/tutor/TClassAssignment.css";
 
 const TClassAssignment = () => {
   const { classId } = useParams();
+  const navigate = useNavigate(); // Add this line
   const [assignments, setAssignments] = useState([]);
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
@@ -37,6 +38,8 @@ const TClassAssignment = () => {
           }
         );
         if (res.data.success) setAssignments(res.data.assignments || []);
+        // Debug log to check assignments data
+        console.log('Fetched assignments:', res.data.assignments);
       } catch (err) {
         setAssignments([]);
       }
@@ -103,6 +106,8 @@ const TClassAssignment = () => {
       setMessage("Deadline updated successfully.");
       setEditDeadlineIdx(null);
       setEditDeadlineValue("");
+      // Debug log to check assignments after deadline update
+      console.log('Assignments after deadline update:', res.data.assignments);
     } catch (err) {
       setMessage(
         err.response?.data?.message ||
@@ -219,6 +224,13 @@ const TClassAssignment = () => {
       <Header />
       <div className="flex-1 flex flex-col items-center justify-start pt-4 sm:pt-10 md:pt-20">
         <div className="w-full max-w-2xl bg-white shadow-lg rounded-lg p-4 sm:p-6 md:p-8 mx-2 sm:mx-4">
+          {/* Back to Classes Button */}
+          <button
+            className="mb-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded transition self-start"
+            onClick={() => navigate("/dashboard/tutor/classes")}
+          >
+            ← Back to Classes
+          </button>
           <h2 className="text-3xl font-bold mb-6 text-gray-800">Class Assignments</h2>
           {/* Upload Assignment */}
           <div className="mb-8">
