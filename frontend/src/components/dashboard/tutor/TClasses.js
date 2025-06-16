@@ -4,6 +4,7 @@ import Header from "../Header";
 import Sidebar from "../Sidebar";
 import CourseCard from "./CourseCard";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const formatTimeRange = (startTime, duration) => {
     if (!startTime || !duration) return "No time specified";
@@ -20,6 +21,7 @@ export default function TClasses() {
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchClasses = async () => {
@@ -63,18 +65,27 @@ export default function TClasses() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {classes.map((classItem) => (
-                            <CourseCard
-                                key={classItem._id}
-                                id={classItem._id}
-                                title={classItem.title || "Untitled Class"}
-                                type={classItem.type}
-                                time={formatTimeRange(classItem.time, classItem.duration)}
-                                description={classItem.course?.courseDescription || "No description provided"}
-                                studentName={classItem.student?.firstName || "N/A"}
-                                participants={classItem.participants || []}
-                                meetLink={classItem.classLink}
-                                duration={classItem.duration}
-                            />
+                            <div key={classItem._id} className="relative">
+                                <CourseCard
+                                    id={classItem._id}
+                                    title={classItem.title || "Untitled Class"}
+                                    type={classItem.type}
+                                    time={formatTimeRange(classItem.time, classItem.duration)}
+                                    description={classItem.course?.courseDescription || "No description provided"}
+                                    studentName={classItem.student?.firstName || "N/A"}
+                                    participants={classItem.participants || []}
+                                    meetLink={classItem.classLink}
+                                    duration={classItem.duration}
+                                />
+                                <div className="mt-2">
+                                    <button
+                                        className="bg-blue-600 text-white px-3 py-1 rounded mt-1"
+                                        onClick={() => navigate(`/dashboard/tutor/class/${classItem._id}/assignment`)}
+                                    >
+                                        Manage Assignment
+                                    </button>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 )}

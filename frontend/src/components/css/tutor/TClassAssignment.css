@@ -1,0 +1,293 @@
+/* Assignment Card Styles */
+.assignment-card {
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px 0 rgba(59, 130, 246, 0.04);
+  margin-bottom: 0.5rem;
+  padding: 1.25rem 1.5rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  position: relative;
+}
+.assignment-card:hover {
+  box-shadow: 0 6px 32px 0 rgba(59, 130, 246, 0.13), 0 2px 8px 0 rgba(0,0,0,0.06);
+  border-color: #2563eb;
+}
+.assignment-card .text-blue-700 {
+  word-break: break-all;
+}
+.assignment-card .text-red-600 {
+  font-weight: 600;
+}
+.assignment-card .text-yellow-600 {
+  font-weight: 600;
+}
+.assignment-card .text-green-600 {
+  font-weight: 600;
+}
+.assignment-card .text-purple-700 {
+  font-weight: 600;
+}
+.assignment-card .text-xs {
+  font-size: 0.9rem;
+}
+.assignment-card label {
+  margin-bottom: 0.25rem;
+}
+.assignment-card input[type="file"] {
+  background: #f9fafb;
+}
+.assignment-card button {
+  min-width: 90px;
+  border-radius: 0.375rem;
+  font-size: 0.95rem;
+}
+.assignment-card .solution-list {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+.assignment-card .solution-list li {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.assignment-card .solution-list li:last-child {
+  border-bottom: none;
+}
+.assignment-card .grade-label {
+  color: #059669;
+  font-weight: 600;
+}
+.assignment-card .feedback-label {
+  color: #374151;
+  font-style: italic;
+  margin-left: 0.5rem;
+}
+.assignment-card .need-grading-label {
+  color: #b45309;
+  font-weight: 600;
+}
+.assignment-card .grade-edit-btn {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 500;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.15s;
+}
+.assignment-card .grade-edit-btn:hover {
+  background: #1d4ed8;
+}
+.assignment-card .grade-form input,
+.assignment-card .grade-form textarea {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem;
+  font-size: 0.95rem;
+}
+.assignment-card .grade-form .grade-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.assignment-card .grade-form .save-btn {
+  background: #059669;
+  color: #fff;
+  font-weight: 600;
+}
+.assignment-card .grade-form .cancel-btn {
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 500;
+}
+/* Simple X Delete Button */
+.assignment-card .delete-x-btn {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: transparent;
+  color: #ef4444;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  transition: color 0.15s;
+}
+.assignment-card .delete-x-btn:hover {
+  color: #b91c1c;
+  background: transparent;
+}
+.assignment-card .view-all-btn {
+  background: #a21caf;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1.2rem;
+  margin-top: 1rem;
+  font-size: 1rem;
+  transition: background 0.15s;
+  display: inline-block;
+}
+.assignment-card .view-all-btn:hover {
+  background: #7c3aed;
+}
+
+/* Solution Box Styles */
+.solution-box {
+  background: #f8fafc;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 4px 0 rgba(59,130,246,0.04);
+  transition: box-shadow 0.2s, border-color 0.2s;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.solution-box:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 4px 16px 0 rgba(59,130,246,0.10);
+}
+.solution-box .solution-title {
+  font-weight: 600;
+  color: #2563eb;
+  font-size: 1rem;
+}
+.solution-box .solution-meta {
+  color: #64748b;
+  font-size: 0.92rem;
+  margin-bottom: 0.25rem;
+}
+.solution-box .grade-label {
+  color: #059669;
+  font-weight: 600;
+}
+.solution-box .feedback-label {
+  color: #374151;
+  font-style: italic;
+  margin-left: 0.5rem;
+}
+.solution-box .need-grading-label {
+  color: #b45309;
+  font-weight: 600;
+}
+.solution-box .grade-edit-btn {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 500;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.15s;
+}
+.solution-box .grade-edit-btn:hover {
+  background: #1d4ed8;
+}
+.solution-box .grade-form input,
+.solution-box .grade-form textarea {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem;
+  font-size: 0.95rem;
+}
+.solution-box .grade-form .grade-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.solution-box .grade-form .save-btn {
+  background: #059669;
+  color: #fff;
+  font-weight: 600;
+}
+.solution-box .grade-form .cancel-btn {
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Modal Scroll */
+.solution-modal-scroll {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+@media (max-width: 900px) {
+  .assignment-card,
+  .solution-box {
+    padding: 1rem 0.75rem;
+    margin-bottom: 1rem;
+  }
+}
+@media (max-width: 600px) {
+  .assignment-card,
+  .solution-box {
+    padding: 0.75rem 0.5rem;
+    margin-bottom: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+  }
+  .assignment-card .flex,
+  .solution-box .flex {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  .assignment-card .flex-col,
+  .solution-box .flex-col {
+    gap: 0.5rem !important;
+  }
+  .assignment-card .text-base,
+  .solution-box .text-base {
+    font-size: 1rem !important;
+  }
+  .assignment-card .text-xs,
+  .solution-box .text-xs {
+    font-size: 0.85rem !important;
+  }
+  .assignment-card button,
+  .solution-box button {
+    min-width: 70px;
+    font-size: 0.9rem;
+    padding: 0.3rem 0.7rem;
+  }
+  .assignment-card input[type="file"] {
+    font-size: 0.9rem;
+  }
+  .assignment-card .view-all-btn {
+    width: 100%;
+    margin-top: 0.75rem;
+    font-size: 0.98rem;
+  }
+}
+@media (max-width: 400px) {
+  .assignment-card,
+  .solution-box {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.9rem;
+  }
+}

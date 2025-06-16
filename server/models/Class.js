@@ -55,6 +55,21 @@ const classSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,  // Default to current timestamp
     },
+    assignment: [
+        {
+            fileUrl: { type: String, required: true },
+            uploadedAt: { type: Date, default: Date.now },
+            solutions: [
+                {
+                    student: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+                    fileUrl: { type: String, required: true },
+                    submittedAt: { type: Date, default: Date.now },
+                    grade: { type: String },
+                    feedback: { type: String }
+                }
+            ]
+        }
+    ],
 });
 
 module.exports = mongoose.model("Class", classSchema);

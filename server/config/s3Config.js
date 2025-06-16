@@ -17,9 +17,16 @@ const s3 = new S3Client({
 const uploadFileToS3 = async (fileBuffer, fileName, fileType = "pdf") => {
     try {
         const timestamp = Date.now();
-        const key = fileType === "image"
-            ? `course-thumbnails/${timestamp}_${fileName}`
-            : `sections/${timestamp}_${fileName}`;
+        let key;
+        if (fileType === "image") {
+            key = `course-thumbnails/${timestamp}_${fileName}`;
+        } else if (fileType === "assignment") {
+            key = `assignment/${timestamp}_${fileName}`;
+        } else if (fileType === "solution") {
+            key = `solution/${timestamp}_${fileName}`;
+        } else {
+            key = `sections/${timestamp}_${fileName}`;
+        }
 
         const params = {
             Bucket: process.env.AWS_S3_BUCKET_NAME,

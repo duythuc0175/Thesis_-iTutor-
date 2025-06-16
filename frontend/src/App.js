@@ -47,6 +47,8 @@ import TNotification from './components/dashboard/tutor/TNotification';
 import TSection from './components/dashboard/tutor/TSection'
 import TClasses from './components/dashboard/tutor/TClasses';
 import SClasses from './components/dashboard/student/SClasses'; // Import SClasses component
+import TClassAssignment from "./components/dashboard/tutor/TClassAssignment";
+import SClassAssignments from "./components/dashboard/student/SClassAssignments";
 
 function App() {
   return (
@@ -76,7 +78,8 @@ function App() {
         />
         <Route path='/dashboard/student/noti' element={<Notification/>}/>
         <Route path='/dashboard/student/section/:sectionId' element={<CourseSection/>}/>
-        <Route path="/dashboard/student/classes" element={<SClasses />} /> {/* Add this route */}
+        <Route path="/dashboard/student/classes" element={<SClasses />} />
+        <Route path="/dashboard/student/class/:classId/assignments" element={<SClassAssignments />} />
 
         {/*tutor*/}
         <Route path="/explore-subjects" element={<ExploreSubjects />} />
@@ -99,6 +102,10 @@ function App() {
         <Route path="/dashboard/tutor/add-new-section" element={<TAddNewSection />} />
         <Route path="/dashboard/tutor/section/:sectionId" element={<TSection />} />
         <Route path="/dashboard/tutor/classes" element={<TClasses />} />
+        <Route
+          path="/dashboard/tutor/class/:classId/assignment"
+          element={<TClassAssignment />}
+        />
 
         {/* admin */}
         <Route path="/dashboard/admin" element={<AdminDashboard />} />

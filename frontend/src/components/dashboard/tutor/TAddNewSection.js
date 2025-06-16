@@ -12,6 +12,7 @@ const TAddNewSection = () => {
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const fileInputRef = React.useRef(null);
 
   // Handle file upload
   const handleFileUpload = async () => {
@@ -39,6 +40,9 @@ const TAddNewSection = () => {
       );
       setPdfFileUrl(response.data.fileUrl); // Use the S3 file URL returned by the backend
       setMessage("File uploaded successfully!");
+      setPdfFile(null); // Reset file state
+      // Reset file input element
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Error uploading file:", error.response?.data || error.message);
       setMessage("Failed to upload file. Please try again.");
@@ -139,6 +143,7 @@ const TAddNewSection = () => {
                   onChange={(e) => setPdfFile(e.target.files[0])}
                   className="border border-gray-300 rounded-lg p-2"
                   required
+                  ref={fileInputRef}
                 />
                 <button
                   type="button"

@@ -3,6 +3,7 @@ const ClassRequest = require("../models/ClassRequest");
 const Course = require("../models/Course");
 const Notification = require("../models/Notification");
 const cron = require("node-cron");
+const { uploadFileToS3 } = require("../config/s3Config");
 
 exports.sendClassRequest = async (req, res) => {
     try {
@@ -529,5 +530,161 @@ exports.getTutorClasses = async (req, res) => {
             success: false,
             message: "Failed to fetch classes for the tutor.",
         });
+    }
+};
+
+// Upload assignment PDF for a class (Tutor only)
+exports.uploadAssignment = async (req, res) => {
+    try {
+        const { classId } = req.params;
+        if (req.user.accountType !== "Tutor") {
+            return res.status(401).json({ success: false, message: "Only tutors can upload assignments." });
+        }
+        const file = req.file;
+        if (!file) {
+            return res.status(400).json({ success: false, message: "No file uploaded." });
+        }
+        // Only allow PDF
+        if (file.mimetype !== "application/pdf") {
+            return res.status(400).json({ success: false, message: "Only PDF files are allowed." });
+        }
+        // Use "assignment" as fileType to upload to assignment folder
+        const fileUrl = await uploadFileToS3(file.buffer, file.originalname, "assignment");
+
+        // Ensure assignment is always an array
+        let classDoc = await Class.findById(classId);
+        if (!classDoc) {
+            return res.status(404).json({ success: false, message: "Class not found." });
+        }
+        if (!Array.isArray(classDoc.assignment)) {
+            classDoc.assignment = [];
+        }
+        classDoc.assignment.push({ fileUrl, uploadedAt: new Date() });
+        await classDoc.save();
+
+        return res.status(200).json({ success: true, message: "Assignment uploaded successfully.", assignments: classDoc.assignment });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Failed to upload assignment.", error: error.message });
+    }
+};
+
+// Student submits solution for an assignment
+exports.submitAssignmentSolution = async (req, res) => {
+    try {
+        const { classId, assignmentIdx } = req.params;
+        const userId = req.user.id;
+        const file = req.file;
+
+        if (!file) {
+            return res.status(400).json({ success: false, message: "No file uploaded." });
+        }
+        if (file.mimetype !== "application/pdf") {
+            return res.status(400).json({ success: false, message: "Only PDF files are allowed." });
+        }
+
+        // Upload to S3 under 'solution' folder
+        const fileUrl = await uploadFileToS3(file.buffer, file.originalname, "solution");
+
+        // Find class and update the assignment's solutions array
+        const classDoc = await Class.findById(classId);
+        if (!classDoc) {
+            return res.status(404).json({ success: false, message: "Class not found." });
+        }
+        const idx = parseInt(assignmentIdx, 10);
+        if (!Array.isArray(classDoc.assignment) || !classDoc.assignment[idx]) {
+            return res.status(404).json({ success: false, message: "Assignment not found." });
+        }
+
+        // Ensure solutions array exists
+        if (!classDoc.assignment[idx].solutions) {
+            classDoc.assignment[idx].solutions = [];
+        }
+        // --- Change: store as ObjectId, not string ---
+        classDoc.assignment[idx].solutions.push({
+            student: req.user._id, // Always store as ObjectId
+            fileUrl,
+            submittedAt: new Date()
+        });
+        await classDoc.save();
+
+        return res.status(200).json({ success: true, message: "Solution submitted successfully!" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Failed to submit solution.", error: error.message });
+    }
+};
+
+// Get assignment PDF URLs for a class
+exports.getAssignment = async (req, res) => {
+    try {
+        const { classId } = req.params;
+        // Populate student info in solutions
+        const classObj = await Class.findById(classId)
+            .populate({
+                path: "assignment.solutions.student",
+                select: "firstName lastName email"
+            });
+        if (!classObj || !classObj.assignment || classObj.assignment.length === 0) {
+            return res.status(404).json({ success: false, message: "Assignment not found." });
+        }
+        // Return assignments with populated student info
+        return res.status(200).json({ success: true, assignments: classObj.assignment });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Failed to fetch assignment.", error: error.message });
+    }
+};
+
+// Grade a student's solution for an assignment (Tutor only)
+exports.gradeAssignmentSolution = async (req, res) => {
+    try {
+        const { classId, assignmentIdx, solutionIdx } = req.params;
+        const { grade, feedback } = req.body;
+
+        // Find the class
+        const classDoc = await Class.findById(classId);
+        if (!classDoc) {
+            return res.status(404).json({ success: false, message: "Class not found." });
+        }
+        const aIdx = parseInt(assignmentIdx, 10);
+        const sIdx = parseInt(solutionIdx, 10);
+
+        if (
+            !Array.isArray(classDoc.assignment) ||
+            !classDoc.assignment[aIdx] ||
+            !Array.isArray(classDoc.assignment[aIdx].solutions) ||
+            !classDoc.assignment[aIdx].solutions[sIdx]
+        ) {
+            return res.status(404).json({ success: false, message: "Assignment or solution not found." });
+        }
+
+        // Update grade and feedback
+        if (grade !== undefined) classDoc.assignment[aIdx].solutions[sIdx].grade = grade;
+        if (feedback !== undefined) classDoc.assignment[aIdx].solutions[sIdx].feedback = feedback;
+
+        await classDoc.save();
+
+        // Optionally, return updated assignments
+        return res.status(200).json({ success: true, message: "Solution graded successfully." });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Failed to grade solution.", error: error.message });
+    }
+};
+
+// Delete an assignment from a class (Tutor only)
+exports.deleteAssignment = async (req, res) => {
+    try {
+        const { classId, assignmentIdx } = req.params;
+        const classDoc = await Class.findById(classId);
+        if (!classDoc) {
+            return res.status(404).json({ success: false, message: "Class not found." });
+        }
+        const idx = parseInt(assignmentIdx, 10);
+        if (!Array.isArray(classDoc.assignment) || !classDoc.assignment[idx]) {
+            return res.status(404).json({ success: false, message: "Assignment not found." });
+        }
+        classDoc.assignment.splice(idx, 1);
+        await classDoc.save();
+        return res.status(200).json({ success: true, message: "Assignment deleted successfully.", assignments: classDoc.assignment });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Failed to delete assignment.", error: error.message });
     }
 };

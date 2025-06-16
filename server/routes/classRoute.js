@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const classController = require("../controllers/classController");
 const { auth, isStudent, isTutor, isAdmin } = require("../middlewares/authMiddleware");
+const upload = require("../middlewares/upload");
 
 // Route to send a class request (Student only)
 router.post("/send-request/:courseId", auth, isStudent, classController.sendClassRequest);
@@ -35,5 +36,33 @@ router.get("/tutor-classes", auth, isTutor, classController.getTutorClasses);
 
 // Route to delete a class by ID (Tutor only)
 router.delete("/:classId", auth, isTutor, classController.deleteClassById);
+
+// Assignment endpoints for a class
+router.get("/:classId/assignment", auth, classController.getAssignment);
+router.post("/:classId/assignment", auth, upload.single("file"), classController.uploadAssignment);
+
+// Student submits solution for an assignment
+router.post(
+  "/:classId/assignment/:assignmentIdx/submit",
+  auth,
+  upload.single("file"),
+  classController.submitAssignmentSolution
+);
+
+// Add this route for grading a solution (Tutor only)
+router.put(
+  "/:classId/assignment/:assignmentIdx/solution/:solutionIdx/grade",
+  auth,
+  isTutor,
+  classController.gradeAssignmentSolution
+);
+
+// Add this route for deleting an assignment (Tutor only)
+router.delete(
+  "/:classId/assignment/:assignmentIdx",
+  auth,
+  isTutor,
+  classController.deleteAssignment
+);
 
 module.exports = router;
