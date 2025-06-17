@@ -24,6 +24,8 @@ const uploadFileToS3 = async (fileBuffer, fileName, fileType = "pdf") => {
             key = `assignment/${timestamp}_${fileName}`;
         } else if (fileType === "solution") {
             key = `solution/${timestamp}_${fileName}`;
+        } else if (fileType === "cv" || fileType === "CV") {
+            key = `CV/${timestamp}_${fileName}`;
         } else {
             key = `sections/${timestamp}_${fileName}`;
         }

@@ -9,7 +9,7 @@ const uploadCV = async (req, res) => {
     }
 
     // Upload the file to S3
-    const fileUrl = await uploadFileToS3(file.buffer, file.originalname, "pdf");
+    const fileUrl = await uploadFileToS3(file.buffer, file.originalname, "CV");
 
     res.status(200).json({ message: "File uploaded successfully", fileUrl });
   } catch (error) {

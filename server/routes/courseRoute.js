@@ -8,8 +8,8 @@ const {
   addCourse,
   updateCourseById,
   deleteCourseById,
-  countAllCourses, // Added the function to count all courses
   uploadThumbnail,
+  countAllCourses,
 } = require("../controllers/courseController");
 
 // Public: Get All Courses
@@ -17,9 +17,6 @@ router.get("/", getAllCourses);
 
 // Public: Get Course by ID
 router.get("/:courseId", getCourseById);
-
-// Public: Get Total Course Count
-router.get("/count/all", countAllCourses); // New route to get the course count
 
 // Admin-only: Add Course
 router.post("/add", auth, isTutor, addCourse);
@@ -32,5 +29,8 @@ router.delete("/:courseId", auth, isTutor, deleteCourseById);
 
 // Route for uploading course thumbnails
 router.post("/upload-thumbnail", auth, isTutor, upload.single("file"), uploadThumbnail);
+
+// Add course count route
+router.get("/count", countAllCourses);
 
 module.exports = router;

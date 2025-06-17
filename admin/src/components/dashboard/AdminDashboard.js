@@ -9,10 +9,12 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
+        // Update endpoints to match backend routes for counts
+        const token = localStorage.getItem("token");
         const [studentsRes, tutorsRes, coursesRes] = await Promise.all([
-          axios.get("http://localhost:4000/api/students/count"),
-          axios.get("http://localhost:4000/api/tutors/count"),
-          axios.get("http://localhost:4000/api/courses/count"),
+          axios.get("http://localhost:4000/api/v1/user/count?type=Student", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get("http://localhost:4000/api/v1/user/count?type=Tutor", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get("http://localhost:4000/api/v1/courses/count", { headers: { Authorization: `Bearer ${token}` } }),
         ]);
         setCounts({
           students: studentsRes.data.count,
