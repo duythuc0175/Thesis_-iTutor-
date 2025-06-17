@@ -60,13 +60,18 @@ export default function Subject() {
     setSearchQuery(e.target.value.toLowerCase());
   };
 
-  const filterSubjects = (subjects) =>
-    subjects.filter(
-      (subject) =>
-        subject.title.toLowerCase().includes(searchQuery) ||
-        subject.description.toLowerCase().includes(searchQuery) ||
-        subject.tags.some((tag) => tag.toLowerCase().includes(searchQuery))
-    );
+  // Filter subjects for each category based on search query
+  const filteredCategories = categories
+    .map((category) => ({
+      ...category,
+      subjects: category.subjects.filter(
+        (subject) =>
+          subject.title.toLowerCase().includes(searchQuery) ||
+          subject.description.toLowerCase().includes(searchQuery) ||
+          subject.tags.some((tag) => tag.toLowerCase().includes(searchQuery))
+      ),
+    }))
+    .filter((category) => category.subjects.length > 0);
 
   return (
     <div className="main-container">
@@ -92,57 +97,52 @@ export default function Subject() {
         </div>
 
         <div className="categories-container">
-          {categories.map((category, index) => (
-            <div key={index} className="category-section">
-              {/* Category Title */}
-              <h2 className="category-title">
-                {category.title}
-              </h2>
-  
-              {/* Courses */}
-              <div className="subjects-grid">
-                {category.subjects.map((subject, i) => {
-                const filteredSubjects = filterSubjects(category.subjects);
-                return (
-                  filteredSubjects.length > 0 && (
-                  <Link
-                    to={`/dashboard/student/subject/${subject.id}`}
-                    key={i}
-                    className="subject-card"
-                  >
-                    {/* Course Title */}
-                    <h3 className="subject-title">
-                      {subject.title}
-                    </h3>
-  
-                    {/* Course Description */}
-                    <p className="subject-description">
-                      {subject.description}
-                    </p>
-  
-                    {/* Tags */}
-                    <p className="subject-tags">
-                      <strong>Tags:</strong>{" "}
-                      {subject.tags.length > 0
-                        ? subject.tags.join(", ")
-                        : "No tags available."}
-                    </p>
-  
-                    {/* Thumbnail */}
-                    {subject.thumbnail && (
-                      <img
-                        src={subject.thumbnail}
-                        alt={`${subject.title} Thumbnail`}
-                        className="subject-thumbnail"
-                      />
-                    )}
-                  </Link>
-                )
-                );
-                })}
+          {filteredCategories.length === 0 ? (
+            <p>No courses found.</p>
+          ) : (
+            filteredCategories.map((category, index) => (
+              <div key={index} className="category-section">
+                {/* Category Title */}
+                <h2 className="category-title">
+                  {category.title}
+                </h2>
+                {/* Courses */}
+                <div className="subjects-grid">
+                  {category.subjects.map((subject, i) => (
+                    <Link
+                      to={`/dashboard/student/subject/${subject.id}`}
+                      key={i}
+                      className="subject-card"
+                    >
+                      {/* Course Title */}
+                      <h3 className="subject-title">
+                        {subject.title}
+                      </h3>
+                      {/* Course Description */}
+                      <p className="subject-description">
+                        {subject.description}
+                      </p>
+                      {/* Tags */}
+                      <p className="subject-tags">
+                        <strong>Tags:</strong>{" "}
+                        {subject.tags.length > 0
+                          ? subject.tags.join(", ")
+                          : "No tags available."}
+                      </p>
+                      {/* Thumbnail */}
+                      {subject.thumbnail && (
+                        <img
+                          src={subject.thumbnail}
+                          alt={`${subject.title} Thumbnail`}
+                          className="subject-thumbnail"
+                        />
+                      )}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
       <Footer/>

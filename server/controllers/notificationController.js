@@ -10,10 +10,7 @@ exports.getNotifications = async (req, res) => {
             .sort({ createdAt: -1 }) // Sort by creation date in descending order
             .limit(20); // You can limit the number of notifications per request if needed
 
-        if (notifications.length === 0) {
-            return res.status(404).json({ message: "No notifications found." });
-        }
-
+        // Always return 200 with an array, even if empty
         return res.status(200).json({
             message: "Notifications retrieved successfully.",
             notifications,
@@ -43,5 +40,21 @@ exports.markAsRead = async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "An error occurred while marking the notification." });
+    }
+};
+
+// Delete a notification by ID
+exports.deleteNotification = async (req, res) => {
+    try {
+        const notificationId = req.params.notificationId;
+        const userId = req.user.id;
+        const notification = await Notification.findOneAndDelete({ _id: notificationId, user: userId });
+        if (!notification) {
+            return res.status(404).json({ error: "Notification not found or not authorized." });
+        }
+        return res.status(200).json({ message: "Notification deleted successfully." });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "An error occurred while deleting the notification." });
     }
 };

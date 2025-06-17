@@ -40,6 +40,7 @@ export default function Login() {
       }
 
       localStorage.setItem("token", token);
+      localStorage.setItem("accountType", accountType.toLowerCase());
       setAccountType(accountType);
       navigate(`/dashboard/${accountType.toLowerCase()}/subjects`);
     } catch (error) {

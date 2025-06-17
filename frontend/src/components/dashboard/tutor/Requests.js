@@ -4,6 +4,7 @@ import Sidebar from "../Sidebar";
 import Header from "../Header";
 import Footer from "../Footer";
 import { useNavigate } from "react-router-dom";
+import { FaTimes } from 'react-icons/fa';
 
 export default function Requests() {
   const [requests, setRequests] = useState([]);
@@ -27,6 +28,7 @@ export default function Requests() {
     classLink: "",
     duration:""
   });
+  const [requestToDelete, setRequestToDelete] = useState(null);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -218,6 +220,13 @@ export default function Requests() {
     }
 };
 
+  const handleDeleteRequest = async (id) => {
+    // If you have a backend endpoint, call it here. For now, just remove from UI.
+    setRequests((prev) => prev.filter((req) => req.id !== id));
+    setFilteredRequests((prev) => prev.filter((req) => req.id !== id));
+    setRequestToDelete(null);
+  };
+
   const gotoSchedule = () => {
     navigate("/dashboard/tutor/schedule");
   }
@@ -256,10 +265,21 @@ export default function Requests() {
               {filteredRequests.map((request) => (
                 <li
                   key={request.id}
-                  className={`flex items-center justify-between border-b pb-2 ${
+                  className={`flex items-center justify-between border-b pb-2 relative group ${
                     request.isNew ? "bg-yellow-100 border-yellow-300" : ""
                   }`}
                 >
+                  {/* X icon for accepted/rejected requests, only visible on hover */}
+                  {(request.status === "Accepted" || request.status === "Rejected") && (
+        <button
+          className="absolute -top-3 right-0.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:text-red-600 text-base z-10 p-0.5 rounded-full bg-white hover:bg-red-50"
+          onClick={() => setRequestToDelete(request)}
+          title="Delete Request"
+          style={{ lineHeight: 1 }}
+        >
+          <FaTimes className="w-3.5 h-3.5" />
+        </button>
+      )}
                   <div>
                     <p className="text-gray-800 font-semibold">{request.student}</p>
                     <p className="text-gray-600 text-sm">
@@ -413,6 +433,30 @@ export default function Requests() {
                 className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700"
               >
                 Create Class
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Request Confirmation Modal */}
+      {requestToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Delete Request</h2>
+            <p className="mb-6">Are you sure you want to delete this request?</p>
+            <div className="flex gap-4 justify-end">
+              <button
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                onClick={() => handleDeleteRequest(requestToDelete.id)}
+              >
+                Yes, Delete
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                onClick={() => setRequestToDelete(null)}
+              >
+                Cancel
               </button>
             </div>
           </div>

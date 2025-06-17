@@ -70,9 +70,9 @@ export default function TClasses() {
                                     id={classItem._id}
                                     title={classItem.title || "Untitled Class"}
                                     type={classItem.type}
-                                    time={formatTimeRange(classItem.time, classItem.duration)}
+                                    time={classItem.time} // Pass raw date string
                                     description={classItem.course?.courseDescription || "No description provided"}
-                                    studentName={classItem.student?.firstName || "N/A"}
+                                    studentName={classItem.student ? `${classItem.student.firstName || ''} ${classItem.student.lastName || ''}`.trim() || "No student info" : "No student info"}
                                     participants={classItem.participants || []}
                                     meetLink={classItem.classLink}
                                     duration={classItem.duration}

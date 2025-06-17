@@ -71,6 +71,12 @@ const classSchema = new mongoose.Schema({
             ]
         }
     ],
+    pendingRequests: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User", // Students requesting to join group class
+        }
+    ],
 });
 
 module.exports = mongoose.model("Class", classSchema);

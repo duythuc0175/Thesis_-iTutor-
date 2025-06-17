@@ -38,7 +38,7 @@ export default function SchedulePage() {
             id: classItem._id,
             title: classItem.type === "Group"
               ? `[GROUP] ${classItem.title || "Group Class"}`
-              : classItem.title || "Untitled Class",
+              : (classItem.title?.replace(/^Personal Class for /, "") || "Untitled Class"),
             start: startTime,
             end: endTime,
             description: classItem.course?.courseDescription || "No description provided",
@@ -180,7 +180,13 @@ export default function SchedulePage() {
                       key={event.id}
                       className={`event-item ${event.type === 'Group' ? 'group-class' : 'personal-class'}`}
                     >
-                      <div className="event-title">{event.title}</div>
+                      <div className="event-title" title={event.title} style={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '160px', // adjust as needed for your card size
+                        display: 'block',
+                      }}>{event.title}</div>
                       <div className="event-time">
                         {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
                         {new Date(event.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

@@ -199,6 +199,14 @@ exports.handleClassRequest = async (req, res) => {
                 // Update the request status to "Accepted" only if no conflict is found
                 classRequest.status = "Accepted";
                 await classRequest.save();
+
+                // Notify the student that their request was accepted
+                const studentNotification = new Notification({
+                    user: classRequest.student._id || classRequest.student, // handle both populated and unpopulated
+                    type: "ClassRequestHandled",
+                    message: `Your class request for the course: ${classRequest.course.courseName || classRequest.course.title} at ${classRequest.time.toISOString()} was accepted!`,
+                });
+                await studentNotification.save();
             } catch (classCreationError) {
                 console.error("Error in class creation:", classCreationError);
                 return res.status(500).json({
@@ -461,12 +469,15 @@ exports.requestToJoinGroupClass = async (req, res) => {
             return res.status(403).json({ error: "You must be enrolled in the course to join this group class." });
         }
 
-        // Add the student to the participants list
-        groupClass.participants.push(studentId);
+        // Add the student to the pendingRequests list instead of participants
+        if (groupClass.pendingRequests.includes(studentId)) {
+            return res.status(400).json({ error: "You have already requested to join this group class." });
+        }
+        groupClass.pendingRequests.push(studentId);
         await groupClass.save();
 
         return res.status(200).json({
-            message: "Successfully joined the group class.",
+            message: "Request to join the group class sent. Awaiting tutor approval.",
             groupClass,
         });
     } catch (error) {
@@ -518,7 +529,8 @@ exports.getTutorClasses = async (req, res) => {
         // Fetch all classes where the logged-in user is the tutor
         const classes = await Class.find({ tutor: tutorId })
             .populate("course", "courseName") // Populate course details
-            .populate("participants", "_id"); // Populate participants
+            .populate("participants", "_id") // Populate participants
+            .populate("student", "firstName lastName _id"); // Populate student info
 
         return res.status(200).json({
             success: true,
@@ -626,6 +638,18 @@ exports.getAssignment = async (req, res) => {
         if (!classObj || !classObj.assignment || classObj.assignment.length === 0) {
             return res.status(404).json({ success: false, message: "Assignment not found." });
         }
+
+        // Only allow participants to view assignments for group classes
+        if (classObj.type === "Group") {
+            const userId = req.user.id || req.user._id;
+            const isParticipant = classObj.participants.some(
+                (p) => p.toString() === userId.toString()
+            );
+            if (!isParticipant) {
+                return res.status(403).json({ success: false, message: "You are not a participant in this group class." });
+            }
+        }
+
         // Return assignments with populated student info
         return res.status(200).json({ success: true, assignments: classObj.assignment });
     } catch (error) {
@@ -711,5 +735,42 @@ exports.updateAssignmentDeadline = async (req, res) => {
         return res.status(200).json({ success: true, message: "Deadline updated successfully.", assignments: classDoc.assignment });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Failed to update deadline.", error: error.message });
+    }
+};
+
+// Accept or reject a student's request to join a group class
+exports.handleGroupJoinRequest = async (req, res) => {
+    try {
+        const { classId, studentId } = req.body; // Tutor provides classId and studentId
+        const { decision } = req.body; // 'accept' or 'reject'
+        const tutorId = req.user.id;
+
+        const groupClass = await Class.findById(classId);
+        if (!groupClass || groupClass.type !== "Group") {
+            return res.status(404).json({ error: "Group class not found." });
+        }
+        if (groupClass.tutor.toString() !== tutorId) {
+            return res.status(403).json({ error: "Only the tutor can handle join requests." });
+        }
+        if (!groupClass.pendingRequests.includes(studentId)) {
+            return res.status(400).json({ error: "No such pending request." });
+        }
+        // Remove from pendingRequests
+        groupClass.pendingRequests = groupClass.pendingRequests.filter(
+            (id) => id.toString() !== studentId
+        );
+        if (decision === "accept") {
+            if (!groupClass.participants.includes(studentId)) {
+                groupClass.participants.push(studentId);
+            }
+        }
+        await groupClass.save();
+        return res.status(200).json({
+            message: decision === "accept" ? "Student added to group class." : "Request rejected.",
+            groupClass,
+        });
+    } catch (error) {
+        console.error("Error in handleGroupJoinRequest:", error);
+        return res.status(500).json({ error: "An error occurred. Please try again later." });
     }
 };

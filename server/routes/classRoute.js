@@ -73,4 +73,7 @@ router.put(
   classController.updateAssignmentDeadline
 );
 
+// Tutor handles group join requests (accept/reject)
+router.post("/handle-group-join-request", auth, isTutor, classController.handleGroupJoinRequest);
+
 module.exports = router;

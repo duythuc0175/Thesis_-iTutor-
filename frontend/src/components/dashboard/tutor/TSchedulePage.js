@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../../css/student/SchedulePage.css';
 
 export default function TSchedulePage() {
@@ -15,6 +15,9 @@ export default function TSchedulePage() {
     meetLink: "",
   });
   const [loading, setLoading] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [eventToDelete, setEventToDelete] = useState(null);
+  const modalRef = useRef();
 
   // Fetch classes on component mount
   useEffect(() => {
@@ -50,13 +53,16 @@ export default function TSchedulePage() {
                     id: classItem._id,
                     title: classItem.type === "Group"
                         ? `[GROUP] ${classItem.title || "Group Class"}`
-                        : classItem.title || "Untitled Class",
+                        : (classItem.title?.replace(/^Personal Class for /, "") || "Untitled Class"),
                     start: startTime,
                     end: endTime,
                     description: classItem.course?.courseDescription || "No description provided",
                     meetLink: classItem.classLink || "",
                     participants: classItem.participants?.length || 0,
                     type: classItem.type,
+                    studentName: classItem.type === "Personal" && classItem.student
+                        ? [classItem.student.firstName, classItem.student.lastName].filter(Boolean).join(" ")
+                        : undefined,
                 };
             });
 
@@ -169,15 +175,13 @@ export default function TSchedulePage() {
     }
   };
   
-  const deleteEvent = async (eventId) => {
+  const deleteEvent = async (eventId, studentId) => {
     try {
         const token = localStorage.getItem("token");
-
         if (!token) {
             console.error("No authentication token found");
             return;
         }
-
         const response = await fetch(`http://localhost:4000/api/v1/classes/${eventId}`, {
             method: "DELETE",
             headers: {
@@ -185,9 +189,23 @@ export default function TSchedulePage() {
                 Authorization: `Bearer ${token}`,
             },
         });
-
         if (response.ok) {
             setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId));
+            // Send notification to student (if personal class)
+            if (studentId) {
+              await fetch("http://localhost:4000/api/v1/notifications/", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  user: studentId,
+                  type: "ClassCancelled",
+                  message: "Your class has been cancelled by the tutor.",
+                }),
+              });
+            }
         } else {
             const data = await response.json();
             console.error("Failed to delete class:", data.message);
@@ -322,9 +340,18 @@ export default function TSchedulePage() {
                           key={event.id} 
                           className={`event-item ${event.type === 'Group' ? 'group-class' : 'personal-class'}`}
                         >
-                          <div className="event-title">{event.title}</div>
+                          <div className="event-title" title={event.title} style={{
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '160px',
+                            display: 'block',
+                          }}>{event.title}</div>
+                          <div className="event-time">
+                            {event.start && event.end && `${new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(event.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                          </div>
                           <div className="event-details">
-                            {event.studentName && (
+                            {event.type === 'Personal' && event.studentName && (
                               <div className="student-name">Student: {event.studentName}</div>
                             )}
                             {event.type === 'Group' && (
@@ -342,7 +369,7 @@ export default function TSchedulePage() {
                             )}
                           </div>
                           <button 
-                            onClick={() => deleteEvent(event.id)}
+                            onClick={() => setEventToDelete(event)}
                             className="delete-btn"
                           >
                             ✖
@@ -382,7 +409,7 @@ export default function TSchedulePage() {
                             {new Date(event.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                           </div>
                           <div className="event-details">
-                            {event.studentName && (
+                            {event.type === 'Personal' && event.studentName && (
                               <div className="student-name">Student: {event.studentName}</div>
                             )}
                             {event.type === 'Group' && (
@@ -400,7 +427,7 @@ export default function TSchedulePage() {
                             )}
                           </div>
                           <button 
-                            onClick={() => deleteEvent(event.id)}
+                            onClick={() => setEventToDelete(event)}
                             className="delete-btn"
                           >
                             ✖
@@ -560,6 +587,50 @@ export default function TSchedulePage() {
                 <button
                   onClick={() => setIsAddEventModalOpen(false)}
                   className="cancel-btn"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {eventToDelete && (
+          <div style={{
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.3)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <div style={{
+              background: 'white',
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              padding: '24px',
+              minWidth: '260px',
+              maxWidth: '90vw',
+            }}>
+              <p className="mb-4">Are you sure you want to cancel this class?</p>
+              <div className="flex gap-4">
+                <button
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                  onClick={() => {
+                    deleteEvent(eventToDelete.id, eventToDelete.type === 'Personal' ? eventToDelete.studentId : undefined);
+                    setEventToDelete(null);
+                  }}
+                >
+                  Yes, Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                  onClick={() => setEventToDelete(null)}
                 >
                   Cancel
                 </button>

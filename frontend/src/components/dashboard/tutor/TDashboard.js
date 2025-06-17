@@ -567,9 +567,18 @@ export default function TDashboard() {
                     <p className="text-gray-600 text-sm">
                       {session.date} at {session.time}
                     </p>
-                    <p className="text-gray-600 text-sm">
-                      Student: {session.studentName} - {session.type} Class
-                    </p>
+                    {/* Only show student name for Personal classes */}
+                    {session.type !== "Group" && (
+                      <p className="text-gray-600 text-sm">
+                        Student: {session.studentName} - {session.type} Class
+                      </p>
+                    )}
+                    {/* For group classes, just show type */}
+                    {session.type === "Group" && (
+                      <p className="text-gray-600 text-sm">
+                        {session.type} Class
+                      </p>
+                    )}
                   </div>
                   {session.meetLink && (
                     <a 

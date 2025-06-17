@@ -10,6 +10,7 @@ export default function Notification() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState(""); // State for search query
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null); // For confirmation dialog
 
   // Fetch notifications from the API
   useEffect(() => {
@@ -52,6 +53,38 @@ export default function Notification() {
       notification.message.toLowerCase().includes(searchQuery) ||
       notification.status.toLowerCase().includes(searchQuery)
   );
+
+  // Mark notification as read (now 'seen')
+  const handleMarkAsRead = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.patch(
+        `http://localhost:4000/api/v1/notifications/${id}/read`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === id ? { ...n, status: "seen" } : n))
+      );
+    } catch (err) {
+      alert("Failed to mark as seen.");
+    }
+  };
+
+  // Remove notification (after confirmation)
+  const handleRemove = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(
+        `http://localhost:4000/api/v1/notifications/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+      setConfirmRemoveId(null);
+    } catch (err) {
+      alert("Failed to remove notification.");
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -98,19 +131,57 @@ export default function Notification() {
                 <p className="text-gray-600">
                   <strong>Status:</strong>{" "}
                   <span
-                    className={`${
+                    className={
                       notification.status === "unread"
-                        ? "text-blue-500"
-                        : "text-gray-500"
-                    }`}
+                        ? "text-blue-500 font-semibold"
+                        : "text-green-600 font-semibold"
+                    }
                   >
-                    {notification.status}
+                    {notification.status === "read" || notification.status === "seen" ? "seen" : notification.status}
                   </span>
                 </p>
                 <p className="text-gray-600">
                   <strong>Created At:</strong>{" "}
                   {new Date(notification.createdAt).toLocaleString()}
                 </p>
+                <div className="mt-4 flex gap-2">
+                  {notification.status === "unread" && (
+                    <button
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                      onClick={() => handleMarkAsRead(notification._id)}
+                    >
+                      Mark as Read
+                    </button>
+                  )}
+                  <button
+                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                    onClick={() => setConfirmRemoveId(notification._id)}
+                  >
+                    Remove
+                  </button>
+                </div>
+                {/* Confirmation Dialog */}
+                {confirmRemoveId === notification._id && (
+                  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+                    <div className="bg-white p-6 rounded shadow-lg">
+                      <p className="mb-4">Are you sure you want to remove this notification?</p>
+                      <div className="flex gap-4">
+                        <button
+                          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                          onClick={() => handleRemove(notification._id)}
+                        >
+                          Yes, Remove
+                        </button>
+                        <button
+                          className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                          onClick={() => setConfirmRemoveId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
