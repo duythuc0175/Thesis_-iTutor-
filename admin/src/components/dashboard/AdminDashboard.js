@@ -7,25 +7,13 @@ const AdminDashboard = () => {
   const [counts, setCounts] = useState({ students: 0, tutors: 0, courses: 0 });
 
   useEffect(() => {
-    const fetchCounts = async () => {
-      try {
-        // Update endpoints to match backend routes for counts
-        const token = localStorage.getItem("token");
-        const [studentsRes, tutorsRes, coursesRes] = await Promise.all([
-          axios.get("http://localhost:4000/api/v1/user/count?type=Student", { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get("http://localhost:4000/api/v1/user/count?type=Tutor", { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get("http://localhost:4000/api/v1/courses/count", { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
-        setCounts({
-          students: studentsRes.data.count,
-          tutors: tutorsRes.data.count,
-          courses: coursesRes.data.count,
-        });
-      } catch (error) {
-        console.error("Error fetching counts:", error);
-      }
-    };
-    fetchCounts();
+    axios.get("http://localhost:4000/dashboard/admin")
+      .then((res) => {
+        setCounts(res.data);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch dashboard stats", err);
+      });
   }, []);
 
   const handleLogout = () => {

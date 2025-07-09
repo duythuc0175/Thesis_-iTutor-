@@ -22,6 +22,7 @@ const classRoutes = require("./routes/classRoute"); // Make sure this is the cor
 const notificationRoute = require("./routes/notificationRoute");
 const meetRoutes = require("./routes/meetRoutes");
 const reportRoute = require("./routes/reportRoute");
+const dashboardRoute = require("./routes/dashboardRoute");
 
 // Import database configuration
 const database = require("./config/db");
@@ -55,6 +56,7 @@ app.use("/api/v1/classes", classRoutes);
 app.use("/api/v1/notifications", notificationRoute);
 app.use("/api/meet", meetRoutes);
 app.use("/api/v1/report", reportRoute);
+app.use("/dashboard", dashboardRoute);
 
 // Default route
 app.get("/", (req, res) => {

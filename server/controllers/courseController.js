@@ -253,6 +253,7 @@ exports.deleteCourseById = async (req, res) => {
     }
 };
 
+// Count All Courses
 exports.countAllCourses = async (req, res) => {
     try {
         const count = await require("../models/Course").countDocuments();

@@ -138,3 +138,17 @@ exports.countTutors = async (req, res) => {
         res.status(500).json({ message: "Failed to count tutors" });
     }
 };
+
+// Count users by accountType (for admin dashboard)
+exports.countUsersByType = async (req, res) => {
+    try {
+        const { type } = req.query;
+        if (!type) {
+            return res.status(400).json({ message: "Type query parameter is required" });
+        }
+        const count = await require("../models/User").countDocuments({ accountType: type });
+        res.status(200).json({ count });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to count users", error: error.message });
+    }
+};
