@@ -58,6 +58,9 @@ exports.signup = [
         password: hashedPassword,
         accountType,
         resumePath: accountType === "Tutor" ? resumePath : null,
+        active: accountType === "Tutor" ? false : true,
+        approved: accountType === "Tutor" ? false : true,
+        status: accountType === "Tutor" ? "pending" : "active",
       });
 
       return res.status(201).json({
@@ -94,6 +97,14 @@ exports.login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: `No ${accountType} account found with this email. Please check your account type or sign up.`,
+      });
+    }
+
+    // Prevent login if tutor is not approved/active
+    if (accountType === "Tutor" && (user.status !== "active" || !user.active || !user.approved)) {
+      return res.status(403).json({
+        success: false,
+        message: "Your tutor account is pending admin approval. Please wait until your account is approved.",
       });
     }
 

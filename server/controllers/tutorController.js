@@ -123,7 +123,7 @@ exports.getTotalEnrolledStudents = async (req, res) => {
 // Get all tutors (for admin)
 exports.getAllTutors = async (req, res) => {
     try {
-        const tutors = await User.find({ accountType: "Tutor" }).select("firstName lastName email");
+        const tutors = await User.find({ accountType: "Tutor", status: "active", active: true, approved: true }).select("firstName lastName email");
         res.status(200).json({ success: true, data: tutors });
     } catch (error) {
         res.status(500).json({ success: false, message: "Failed to fetch tutors" });
@@ -132,7 +132,8 @@ exports.getAllTutors = async (req, res) => {
 
 exports.countTutors = async (req, res) => {
     try {
-        const count = await require("../models/User").countDocuments({ accountType: "Tutor" });
+        // Only count tutors who are approved, active, and have status 'active'
+        const count = await User.countDocuments({ accountType: "Tutor", status: "active", active: true, approved: true });
         res.status(200).json({ count });
     } catch (error) {
         res.status(500).json({ message: "Failed to count tutors" });

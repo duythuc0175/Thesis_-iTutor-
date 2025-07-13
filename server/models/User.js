@@ -28,11 +28,16 @@ const userSchema = new mongoose.Schema(
     },
     active: {
       type: Boolean,
-      default: true,
+      default: false, // Tutors are inactive by default
     },
     approved: {
       type: Boolean,
-      default: true,
+      default: false, // Tutors are not approved by default
+    },
+    status: {
+      type: String,
+      enum: ["pending", "active", "rejected"],
+      default: "pending", // Tutors are pending by default
     },
     additionalDetails: {
       type: mongoose.Schema.Types.ObjectId,

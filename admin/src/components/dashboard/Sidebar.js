@@ -49,11 +49,14 @@ const Sidebar = () => {
         </li>
         <li className="mb-4">
           <Link 
-            to="/dashboard/admin/list-reports" 
-            className={getActiveClass("/dashboard/admin/list-reports")}
+            to="/dashboard/admin/list-applications" 
+            className={getActiveClass("/dashboard/admin/list-applications")}
           >
-            List Reports
+            List Applications
           </Link>
+        </li>
+        <li className="mb-4">
+
         </li>
       </ul>
     </div>

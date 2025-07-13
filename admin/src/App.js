@@ -6,7 +6,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/dashboard/Sidebar'; // Import Sidebar
 import ListCourses from './components/dashboard/Pages/ListCourses'; // Import ListCourses page
 import ListTutors from './components/dashboard/Pages/ListTutors'; // Import ListTutors page
-import ListReports from './components/dashboard/Pages/ListReports';
+import ListApplications from './components/dashboard/Pages/ListApplications'; // Import ListApplications page
+
 
 function App() {
   return (
@@ -57,17 +58,20 @@ function App() {
           }
         />
 
+        {/* Route for List Applications Page */}
         <Route
-          path="/dashboard/admin/list-reports"
+          path="/dashboard/admin/list-applications"
           element={
             <ProtectedRoute>
               <div className="flex">
-                <Sidebar /> {/* Sidebar */}
-                <ListReports /> {/* List Tutors Page */}
+                <Sidebar />
+                <ListApplications />
               </div>
             </ProtectedRoute>
           }
         />
+
+    
       </Routes>
     </Router>
   );

@@ -5,21 +5,56 @@ import axios from "axios";
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [counts, setCounts] = useState({ students: 0, tutors: 0, courses: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    axios.get("http://localhost:4000/dashboard/admin")
-      .then((res) => {
-        setCounts(res.data);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch dashboard stats", err);
-      });
+    const fetchDashboardStats = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        // Get students and courses count from dashboard endpoint
+        const dashboardRes = await axios.get("http://localhost:4000/dashboard/admin");
+        // Get tutors count from the same endpoint as ListTutors (for consistency)
+        const token = localStorage.getItem("token");
+        const tutorsRes = await axios.get("http://localhost:4000/api/v1/tutor/alltutors/getall", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setCounts({
+          students: dashboardRes.data.students,
+          courses: dashboardRes.data.courses,
+          tutors: Array.isArray(tutorsRes.data.data) ? tutorsRes.data.data.length : 0,
+        });
+      } catch (err) {
+        setError("Failed to fetch dashboard stats");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardStats();
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-lg text-gray-600">Loading dashboard...</div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-lg text-red-600">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 w-full">
@@ -33,7 +68,6 @@ const AdminDashboard = () => {
             Logout
           </button>
         </div>
-        
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {/* Students Card */}
           <div className="bg-white overflow-hidden shadow rounded-lg">
@@ -59,7 +93,6 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-
           {/* Tutors Card */}
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
@@ -84,7 +117,6 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-
           {/* Courses Card */}
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">

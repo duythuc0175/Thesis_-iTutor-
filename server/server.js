@@ -23,6 +23,7 @@ const notificationRoute = require("./routes/notificationRoute");
 const meetRoutes = require("./routes/meetRoutes");
 const reportRoute = require("./routes/reportRoute");
 const dashboardRoute = require("./routes/dashboardRoute");
+const applicationRoute = require("./routes/applicationRoute");
 
 // Import database configuration
 const database = require("./config/db");
@@ -56,6 +57,7 @@ app.use("/api/v1/classes", classRoutes);
 app.use("/api/v1/notifications", notificationRoute);
 app.use("/api/meet", meetRoutes);
 app.use("/api/v1/report", reportRoute);
+app.use("/api/v1/applications", applicationRoute);
 app.use("/dashboard", dashboardRoute);
 
 // Default route

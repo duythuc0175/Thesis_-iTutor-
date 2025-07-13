@@ -60,6 +60,21 @@ const ListTutors = () => {
     }
   };
 
+  const handleDelete = async (tutorId) => {
+    if (!window.confirm("Are you sure you want to delete this tutor account? This action cannot be undone.")) return;
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(`http://localhost:4000/api/v1/tutor/delete/${tutorId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setTutors(tutors.filter(tutor => tutor._id !== tutorId));
+    } catch (err) {
+      alert("Failed to delete tutor");
+    }
+  };
+
   useEffect(() => {
     fetchTutors();
   }, []);
@@ -91,6 +106,7 @@ const ListTutors = () => {
       <div className="w-full max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Tutor List</h1>
+          <p className="text-gray-600 mb-2">Total Tutors: {tutors.length}</p>
         </div>
         
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -126,13 +142,22 @@ const ListTutors = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors mr-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           openTutorDetails(tutor._id);
                         }}
                       >
                         View Details
+                      </button>
+                      <button
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(tutor._id);
+                        }}
+                      >
+                        Delete
                       </button>
                     </td>
                   </tr>
